@@ -28,6 +28,7 @@ app.use("/", welcomeRouter);
 app.use("/api", apiRouter);
 
 app.use(notFoundRouter);
+console.log('testt');
 
 app.listen(PORT, () => {
     console.log(`Server running on PORT ${PORT} at ${new Date()}`);
