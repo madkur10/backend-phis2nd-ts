@@ -35,7 +35,7 @@ const htmlIndex = `
     </html>
 `;
 
-router.get("*", (req: Request, res: Response) => {
+router.use("*", (req: Request, res: Response) => {
     if (fs.existsSync(path.join(__dirname, "./views")) === true) {
         if (fs.existsSync(path.join(__dirname, "./views/404.html")) === true) {
             res.sendFile(path.join(__dirname, "./views", "404.html"));
