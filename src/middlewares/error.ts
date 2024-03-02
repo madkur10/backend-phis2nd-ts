@@ -1,11 +1,17 @@
 import { Request, Response, NextFunction } from "express";
 import fs from "fs";
 import path from "path";
+import { v4 as uuid } from "uuid";
 
-export function errLogger(req: Request, res: Response, next: NextFunction, error: any) {
-    const dataLog = `${req.method} | ${req.ip} | ${
+export function errLogger(
+    error: any,
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
+    const dataLog = `${req.method}\t${uuid()}\t${req.ip}\t${
         req.originalUrl
-    } | ${Date.now()} | ${new Date()} | ${error}`;
+    }\t${Date.now()}\t${new Date()}\t${error}`;
     const pathFolderLog = path.join(__dirname, "../log");
     const filePath = `${pathFolderLog}/error/log_${getCurrentDate()}.txt`;
 
@@ -24,7 +30,11 @@ export function errLogger(req: Request, res: Response, next: NextFunction, error
         fs.mkdirSync(`${pathFolderLog}/error`, { recursive: true });
         fs.writeFileSync(filePath, dataLog);
     }
-    next();
+    res.status(error.status || 500).json({
+        error: {
+            message: error.message || "Internal Server Error",
+        },
+    });
 }
 
 function getCurrentDate() {
