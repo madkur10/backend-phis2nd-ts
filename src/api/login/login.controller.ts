@@ -9,6 +9,11 @@ dotenv.config();
 const secretKey: string = process.env.secretKey || "";
 export const router = Router();
 
+// router.get("/test-error",async () => {
+//     next
+
+// })
+
 router.post(
     "/",
     [body(["username", "password"]).notEmpty()],
@@ -55,11 +60,7 @@ router.post(
                 });
             }
         } catch (error: any) {
-            errLogger(req, res, next, error.message.replace(/\n/g, ' '));
-            res.status(400).json({
-                msg: "Terjadi kesalahan dalam program!",
-            });
-            return;
+            next(error.message.replace(/\n/g, " "));
         }
     }
 );

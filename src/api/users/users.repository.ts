@@ -91,7 +91,7 @@ const getUserName = async (nameUser: string) => {
         WHERE
             users.nama_pegawai ilike ${"%" + nameUser + "%"};`;
     const user = await prisma.$queryRaw(rawQuery);
-
+    
     return user;
 };
 

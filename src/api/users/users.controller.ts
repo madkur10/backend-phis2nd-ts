@@ -1,12 +1,14 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { body, param, query, validationResult } from "express-validator";
-import { getAllUsers, getDataUser, insertDataUser, getDataNameUser } from "./users.service";
-import { errLogger } from "../../middlewares/error";
-import jwt, { VerifyErrors } from "jsonwebtoken";
+import {
+    getAllUsers,
+    getDataUser,
+    insertDataUser,
+    getDataNameUser,
+} from "./users.service";
 import * as dotenv from "dotenv";
 
 dotenv.config();
-const secretKey: string = process.env.secretKey || "";
 export const router = Router();
 
 router.get("/", async (req: Request, res: Response, next: NextFunction) => {
@@ -31,11 +33,7 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
             });
         }
     } catch (error: any) {
-        errLogger(req, res, next, error.message.replace(/\n/g, " "));
-        res.status(400).json({
-            msg: "Terjadi kesalahan dalam program!",
-        });
-        return;
+        next(error.message.replace(/\n/g, " "));
     }
 });
 
@@ -74,11 +72,7 @@ router.get(
                 });
             }
         } catch (error: any) {
-            errLogger(req, res, next, error.message.replace(/\n/g, " "));
-            res.status(400).json({
-                msg: "Terjadi kesalahan dalam program!",
-            });
-            return;
+            next(error.message.replace(/\n/g, " "));
         }
     }
 );
@@ -99,7 +93,7 @@ router.get(
 
             const nameUser: string | any = req.params.name;
             const dataUser = await getDataNameUser(nameUser);
-            if (dataUser.length < 1) {
+            if (dataUser.length > 0) {
                 res.status(200).json({
                     metadata: {
                         code: 200,
@@ -118,11 +112,7 @@ router.get(
                 });
             }
         } catch (error: any) {
-            errLogger(req, res, next, error.message.replace(/\n/g, " "));
-            res.status(400).json({
-                msg: "Terjadi kesalahan dalam program!",
-            });
-            return;
+            next(error.message.replace(/\n/g, " "));
         }
     }
 );
@@ -176,11 +166,7 @@ router.post(
                 });
             }
         } catch (error: any) {
-            errLogger(req, res, next, error.message.replace(/\n/g, " "));
-            res.status(400).json({
-                msg: "Terjadi kesalahan dalam program!",
-            });
-            return;
+            next(error.message.replace(/\n/g, " "));
         }
     }
 );
