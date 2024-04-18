@@ -1,7 +1,7 @@
 import { getUsers, getUser, insertData, getUserName } from "./users.repository";
 
-const getAllUsers = async () => {
-    const users: any = await getUsers();
+const getAllUsers = async (data: any) => {
+    const users: any = await getUsers(data);
     if (users.length < 1) {
         return false;
     }

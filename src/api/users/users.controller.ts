@@ -13,7 +13,8 @@ export const router = Router();
 
 router.get("/", async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const dataUser = await getAllUsers();
+        const data = req.body;
+        const dataUser = await getAllUsers(data);
         if (dataUser.length > 0) {
             res.status(200).json({
                 metadata: {
