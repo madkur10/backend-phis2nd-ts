@@ -4,8 +4,22 @@ import { dateNow } from "./../../middlewares/time";
 
 const input_time_now: string = dateNow();
 
-const getUsers = async () => {
+const getUsers = async (data: any) => {
+    let { pageNumber, itemsPerPage } = data;
+
+    if (!pageNumber) {
+        pageNumber = 1
+    }
+
+    if (!itemsPerPage) {
+        itemsPerPage = 10
+    }
+
+    const offset = (pageNumber - 1) * itemsPerPage;
+
     const users = await prisma.users.findMany({
+        take: itemsPerPage,
+        skip: offset,
         orderBy: {
             user_id: "asc",
         },
@@ -91,7 +105,7 @@ const getUserName = async (nameUser: string) => {
         WHERE
             users.nama_pegawai ilike ${"%" + nameUser + "%"};`;
     const user = await prisma.$queryRaw(rawQuery);
-    
+
     return user;
 };
 

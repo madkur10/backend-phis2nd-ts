@@ -9,11 +9,6 @@ dotenv.config();
 const secretKey: string = process.env.secretKey || "";
 export const router = Router();
 
-// router.get("/test-error",async () => {
-//     next
-
-// })
-
 router.post(
     "/",
     [body(["username", "password"]).notEmpty()],
