@@ -20,7 +20,6 @@ const hitFisioNow = async (limit: number) => {
             method,
             null
         );
-        // console.log(responseBooking);
         
 
         if (responseBooking.data) {

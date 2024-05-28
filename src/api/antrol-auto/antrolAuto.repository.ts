@@ -1,6 +1,6 @@
-import { prisma, prismaRawQuery } from "./../../db";
-import { generateMax } from "./../../db/database.handler";
-import { dateNow } from "./../../middlewares/time";
+import { prisma, prismaRawQuery } from "../../db";
+import { generateMax } from "../../db/database.handler";
+import { dateNow } from "../../middlewares/time";
 
 const input_time_now: string = dateNow();
 

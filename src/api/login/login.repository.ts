@@ -1,27 +1,26 @@
-import { prisma, prismaRawQuery } from "./../../db";
+import { prisma, prismaRawQuery } from "../../db";
 
-export const loginUser = async (userData: any) => {
-    const username: String = userData.username;
-    const password: String = userData.password;
-
-    const rawQuery = prismaRawQuery.sql`
-        SELECT 
-            users.user_id,
-            users.input_time,
-            users.input_user_id,
-            users.mod_time,
-            users.mod_user_id,
-            users.status_batal,
-            users.user_name,
-            users.nama_pegawai,
-            users.last_update_pass,
-            users.pegawai_id
-        FROM 
-            users
-        WHERE
-            users.user_name = ${username}
-            AND users.user_password = ${password}`;
-    const users = await prisma.$queryRaw(rawQuery);
+export const loginUser = async (username: string) => {
+    const user = await prisma.users.findUnique({
+        where: {
+            username,
+        },
+        select: {
+            user_id: true,
+            created_id: true,
+            created_time: true,
+            modify_id: true,
+            modify_time: true,
+            deleted_id: true,
+            deleted_time: true,
+            username: true,
+            password: true,
+            first_name: true,
+            last_name: true,
+            last_update_password: true,
+            patients: true,
+        }
+    });
     
-    return users;
+    return user;
 };

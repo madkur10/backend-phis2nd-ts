@@ -31,8 +31,9 @@ export function errLogger(
         fs.writeFileSync(filePath, dataLog);
     }
     res.status(error.status || 500).json({
-        error: {
-            message: error.message || "Internal Server Error",
+        metadata: {
+            msg: error.msg || "Internal Server Error",
+            code: error.code || 500,
         },
     });
 }

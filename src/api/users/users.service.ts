@@ -1,28 +1,20 @@
-import { getUsers, getUser, insertData, getUserName } from "./users.repository";
-
-const getAllUsers = async (data: any) => {
-    const users: any = await getUsers(data);
-    if (users.length < 1) {
-        return false;
-    }
-    return users;
-};
+import { getUser, insertData, getUsername, insertUserPatient } from "./users.repository";
 
 const getDataUser = async (idUser: number) => {
     const user: any = await getUser(idUser);
 
     if (user === null) {
-        return false;
+        return null;
     }
     return user;
 };
 
 interface dataUsers {
-    input_user_id: number;
-    user_name: string;
-    user_password: string;
-    nama_pegawai: string;
-    pegawai_id: number;
+    username: string;
+    password: string;
+    first_name: string;
+    last_name: string;
+    email: string;
 }
 const insertDataUser = async (dataUser: dataUsers) => {
     const user: any = await insertData(dataUser);
@@ -33,13 +25,36 @@ const insertDataUser = async (dataUser: dataUsers) => {
     return user;
 };
 
-const getDataNameUser = async (nameUser: string) => {
-    const user: any = await getUserName(nameUser);
+const getDataUsername = async (username: string) => {
+    const user: any = await getUsername(username);
 
-    if (user.length < 1) {
+    if (user === null) {
+        return null;
+    }
+    return user;
+}
+
+interface dataUserPatient {
+    username: string;
+    password: string;
+    first_name: string;
+    last_name: string;
+    patient_name: string;
+    patient_phone: string;
+    patient_email: string;
+    patient_address: string;
+    identity_number: string;
+    date_of_birth: string;
+    gender: string;
+}
+
+const insertDataUserPatient = async (dataUserPatient: dataUserPatient) => {
+    const user: any = await insertUserPatient(dataUserPatient);
+
+    if (user === null) {
         return false;
     }
     return user;
-};
+}
 
-export { getAllUsers, getDataUser, insertDataUser, getDataNameUser };
+export { getDataUser, insertDataUser, getDataUsername, insertDataUserPatient };

@@ -1,9 +1,9 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { body, param, validationResult } from "express-validator";
 import { getLoginUser } from "./login.service";
-import { errLogger } from "../../middlewares/error";
 import jwt from "jsonwebtoken";
 import * as dotenv from "dotenv";
+import bcrypt from "bcrypt";
 
 dotenv.config();
 const secretKey: string = process.env.secretKey || "";
@@ -22,36 +22,62 @@ router.post(
                 });
                 return;
             }
-            const loginUserData = req.body;
-            const dataUser = await getLoginUser(loginUserData);
+            const { username, password } = req.body;
+            const dataUser = await getLoginUser(username);
 
-            let token: String | undefined;
-            if (dataUser.length > 0) {
-                token = jwt.sign(
-                    {
-                        id: dataUser[0].user_id,
-                        username: dataUser[0].user_name,
-                    },
-                    secretKey,
-                    {
-                        expiresIn: "1h",
-                    }
+            let tokenJwt: String | undefined;
+            if (dataUser) {
+                const inputPassword = await bcrypt.compare(
+                    password,
+                    dataUser.password
                 );
+                if (inputPassword === true) {
+                    tokenJwt = jwt.sign(
+                        {
+                            id: dataUser.user_id,
+                            username: dataUser.user_name,
+                        },
+                        secretKey,
+                        {
+                            expiresIn: "1h",
+                        }
+                    );
 
-                res.cookie("jwt", token, {
-                    expires: new Date(Date.now() + 3600000),
-                    httpOnly: true,
-                });
-
-                res.send({
-                    data: dataUser,
-                    token: token,
-                    msg: "Login Berhasil!",
-                });
+                    res.cookie("jwt", tokenJwt, {
+                        expires: new Date(Date.now() + 15 * 60000),
+                        httpOnly: true,
+                    });
+                    const { password, ...dataUserEnd } = dataUser;
+                    res.status(200).json({
+                        metadata: {
+                            code: 200,
+                            msg: "Login Berhasil!",
+                        },
+                        response: {
+                            data: dataUserEnd,
+                            token: tokenJwt,
+                        },
+                    });
+                } else {
+                    res.status(200).json({
+                        metadata: {
+                            code: 201,
+                            msg: "Login Gagal!",
+                        },
+                        response: {
+                            error: "Password anda tidak sesuai!",
+                        },
+                    });
+                }
             } else {
                 res.status(200).json({
-                    msg: "Login Gagal!",
-                    error: "Periksa kembali username & password!",
+                    metadata: {
+                        code: 201,
+                        msg: "Login Gagal!",
+                    },
+                    response: {
+                        error: "Username anda tidak sesuai!",
+                    },
                 });
             }
         } catch (error: any) {

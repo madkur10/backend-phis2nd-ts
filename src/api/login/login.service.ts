@@ -1,9 +1,10 @@
 import { loginUser } from "./login.repository";
 
-export const getLoginUser = async (loginUserData: any) => {
-    const user: any = await loginUser(loginUserData);
-    if (user.length < 1) {
+export const getLoginUser = async (username: string) => {
+    const user: any = await loginUser(username);
+    if (!user) {
         return false;
     }
+
     return user;
 };
