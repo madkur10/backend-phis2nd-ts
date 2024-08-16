@@ -10,6 +10,9 @@ import { router as usersController } from "./users/users.controller";
 import { router as patientController } from "./patient/patient.controller";
 import { router as appointmentController } from "./appointments/appointment.controller";
 
+import { router as antrolAutoController } from "./antrol-auto/antrolAuto.controller";
+import { router as JKNMobileRouter } from "./bpjs/index";
+
 const router = Router();
 
 router.use(bodyParser.json());
@@ -23,5 +26,7 @@ router.use("/auth-google", googleController);
 router.use("/users", authenticateToken, usersController);
 router.use("/patient", authenticateToken, patientController);
 router.use("/appointment", authenticateToken, appointmentController);
+router.use("/BPJS", JKNMobileRouter);
+router.use("/antrol-auto", antrolAutoController);
 
 export { router };

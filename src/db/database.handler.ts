@@ -37,4 +37,30 @@ const generateMax = async (
     return generateMax;
 };
 
-export { generateMax };
+const selectField = async (
+    tableName: string,
+    field: string | any,
+    conditions: string | any
+) => {
+    const rawQuery = `SELECT
+                        ${field}
+                    FROM
+                        ${tableName}
+                        ${conditions}
+                    Limit 1`;
+    const selectDataField: any = await prisma.$queryRawUnsafe(rawQuery);
+
+    return selectDataField[0][field];
+};
+
+const timeHandler = async (timex: any) => {
+    const time = new Date(timex);
+    const hours = time.getUTCHours().toString().padStart(2, "0");
+    const minutes = time.getUTCMinutes().toString().padStart(2, "0");
+    const seconds = time.getUTCSeconds().toString().padStart(2, "0");
+    const formattedTime = `${hours}:${minutes}:${seconds}`;
+
+    return formattedTime;
+};
+
+export { generateMax, selectField, timeHandler };
