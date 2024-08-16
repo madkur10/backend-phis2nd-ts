@@ -6,7 +6,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
 const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
-    const token: string | undefined = req.header("x-key");
+    const token: string | undefined = req.header("x-token");
 
     let data: any = {};
     if (token == null) {
