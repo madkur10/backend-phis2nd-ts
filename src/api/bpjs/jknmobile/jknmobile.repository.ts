@@ -216,7 +216,7 @@ const checkRujukanService = async (noRujukan: any) => {
 
 const insertRujukanService = async (data: any, inputUserId: any) => {
     const rujukanPasienId = await generateMax(
-        "rujukan_pasien",
+        "max_rujukan_sep_idx",
         "rujukan_pasien_id"
     );
     const insertRujukan = await prisma.rujukan_pasien.create({
@@ -267,7 +267,7 @@ const insertDataNasabahBPJS = async (data: any) => {
     const insertDataNasabah = await prisma.pasien_nasabah.create({
         data: {
             pasien_nasabah_id: await generateMax(
-                "pasien_nasabah",
+                "max_pasien_nasabah_idx",
                 "pasien_nasabah_id"
             ),
             input_time: input_time_now,
