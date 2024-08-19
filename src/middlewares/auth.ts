@@ -27,10 +27,12 @@ const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
             data.response = [];
             return res.status(403).json(data);
         }
+
         const newAccessToken = jwt.sign({ id: user.id }, secretKey, {
             expiresIn: "15m",
         });
         res.setHeader("x-new-token", newAccessToken);
+        req.body.input_user_id = user.id;
         next();
     });
 };

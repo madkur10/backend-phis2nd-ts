@@ -17,6 +17,7 @@ import {
     listJadwalOperasi,
     getTindakanBedah,
     getJadwalOperasi,
+    checkPasienId,
 } from "./jknmobile.repository";
 import axios from "axios";
 import * as dotenv from "dotenv";
@@ -185,7 +186,7 @@ const daftarPerjanjianService = async (data: any) => {
             data.nomorreferensi
         );
         if (!checkRujukan) {
-            const urlRujukan = `http://localhost:8888/API/BPJS/SIMRS-VCLAIM/V2/CARIRUJUKAN/NORUJUKAN/${data.nomorreferensi}`;
+            const urlRujukan = `http://sirs.rspelni.co.id/API/BPJS/SIMRS-VCLAIM/V2/CARIRUJUKAN/NORUJUKAN/${data.nomorreferensi}`;
             const method = "GET";
             const headersData = {};
 
@@ -209,7 +210,7 @@ const daftarPerjanjianService = async (data: any) => {
             }
         }
     } else if (jeniskunjungan === 3) {
-        const urlSKDP = `http://localhost:8888/API/BPJS/SIMRS-VCLAIM/V2/SURAT-KONTROL/INTERNAL/CARI/${data.nomorreferensi}`;
+        const urlSKDP = `http://sirs.rspelni.co.id/API/BPJS/SIMRS-VCLAIM/V2/SURAT-KONTROL/INTERNAL/CARI/${data.nomorreferensi}`;
         const method = "GET";
         const headersData = {};
 
@@ -220,7 +221,7 @@ const daftarPerjanjianService = async (data: any) => {
 
             const checkRujukan: any = await checkRujukanService(noRujukan);
             if (!checkRujukan) {
-                const urlRujukan = `http://localhost:8888/API/BPJS/SIMRS-VCLAIM/V2/CARIRUJUKAN/NORUJUKAN/${noRujukan}`;
+                const urlRujukan = `http://sirs.rspelni.co.id/API/BPJS/SIMRS-VCLAIM/V2/CARIRUJUKAN/NORUJUKAN/${noRujukan}`;
                 const method = "GET";
                 const headersData = {};
 
@@ -383,8 +384,16 @@ const checkInService = async (data: any) => {
 };
 
 const pasienBaruService = async (data: any) => {
-    const pasienBaru: any = await insertPasienBaru(data);
+    const checkPasienIdData: any = await checkPasienId(data.nik);
+    if (checkPasienIdData) {
+        return {
+            code: 200,
+            message: "Harap datang ke admisi untuk melengkapi data rekam medis",
+            norm: checkPasienIdData.no_mr,
+        };
+    }
 
+    const pasienBaru: any = await insertPasienBaru(data);
     if (pasienBaru) {
         return {
             code: 200,
