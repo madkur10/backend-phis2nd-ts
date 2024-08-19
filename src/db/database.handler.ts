@@ -28,7 +28,7 @@ const generateMax = async (
     } else {
         const rawQuery = prismaRawQuery.sql`
             SELECT 
-                nextval(${sequenceName})`;
+                nextval(${sequenceName}) + 1 as nextval`;
         const generate: any = await prisma.$queryRaw(rawQuery);
 
         generateMax = parseInt(generate[0].nextval.toString());

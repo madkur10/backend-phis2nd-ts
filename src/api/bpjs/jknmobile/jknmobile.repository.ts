@@ -334,7 +334,10 @@ const checkDokterReadyService = async (data: any) => {
 };
 
 const insertPendaftaranService = async (data: any) => {
-    const registrasiId = await generateMax("registrasi", "registrasi_id");
+    const registrasiId = await generateMax(
+        "max_registrasi_idx",
+        "registrasi_id"
+    );
     const insertRegistrasi = await prisma.registrasi.create({
         data: {
             registrasi_id: registrasiId,
@@ -350,7 +353,7 @@ const insertPendaftaranService = async (data: any) => {
     });
 
     const registrasiDetailId = await generateMax(
-        "registrasi_detail",
+        "max_registrasi_detail_idx",
         "registrasi_detail_id"
     );
     const insertRegistrasiDetail = await prisma.registrasi_detail.create({
@@ -367,7 +370,7 @@ const insertPendaftaranService = async (data: any) => {
     });
 
     const registrasiUrutId = await generateMax(
-        "registrasi_urut",
+        "max_registrasi_urut_idx",
         "registrasi_urut_id"
     );
     const pegawaiId = await selectField(
@@ -447,7 +450,7 @@ const insertPendaftaranService = async (data: any) => {
     });
 
     const penanggungRawatId = await generateMax(
-        "penanggung_rawat",
+        "max_penanggung_rawat_idx",
         "penanggung_rawat_id"
     );
     const insertPenanggungRawat = await prisma.penanggung_rawat.create({
@@ -461,7 +464,7 @@ const insertPendaftaranService = async (data: any) => {
     });
 
     const diagnosaRawatId = await generateMax(
-        "diagnosa_rawat",
+        "max_diagnosa_rawat_idx",
         "diagnosa_rawat_id"
     );
     const insertDiagnosaRawat = await prisma.diagnosa_rawat.create({
@@ -475,7 +478,10 @@ const insertPendaftaranService = async (data: any) => {
         },
     });
 
-    const rujukanSepId = await generateMax("rujukan_sep", "rujukan_sep_id");
+    const rujukanSepId = await generateMax(
+        "max_rujukan_sep_idx",
+        "rujukan_sep_id"
+    );
     const insertRujukanSep = await prisma.rujukan_sep.create({
         data: {
             rujukan_sep_id: rujukanSepId,
@@ -486,7 +492,7 @@ const insertPendaftaranService = async (data: any) => {
         },
     });
 
-    const billTempId = await generateMax("bill_temp", "bill_temp_id");
+    const billTempId = await generateMax("max_bill_temp_idx", "bill_temp_id");
     const insertBillTemp = await prisma.bill_temp.create({
         data: {
             bill_temp_id: billTempId,
@@ -544,6 +550,7 @@ const insertPendaftaranService = async (data: any) => {
 };
 
 const sisaDataAntrean = async (data: any) => {
+    const registrasiId = parseInt(data.kodebooking, 10);
     const sisaAntrean = `select
                             registrasi_urut.urutan,
                             bagian.nama_bagian,
@@ -571,6 +578,7 @@ const sisaDataAntrean = async (data: any) => {
                                 and registrasi_urut.tgl_urut::date = registrasi.tgl_masuk::date
                                 and registrasi_urut.status_panggil is not null
                                 and registrasi_urut.status_batal is null
+                            limit 1
                             ) antreanpanggil
                         from
                             registrasi
@@ -586,7 +594,7 @@ const sisaDataAntrean = async (data: any) => {
                         inner join pegawai on
                             registrasi_urut.pegawai_id = pegawai.pegawai_id
                         where 
-                            registrasi.registrasi_id = ${data.kodebooking}
+                            registrasi.registrasi_id = ${registrasiId}
                             and registrasi.status_batal is null`;
     const checkData: any = await prisma.$queryRawUnsafe(sisaAntrean);
 
@@ -594,9 +602,10 @@ const sisaDataAntrean = async (data: any) => {
 };
 
 const batalDataAntrean = async (data: any) => {
+    const registrasiId = parseInt(data.kodebooking, 10);
     const batalRegistrasi: any = await prisma.registrasi.update({
         where: {
-            registrasi_id: data.kodebooking,
+            registrasi_id: registrasiId,
         },
         data: {
             status_batal: 1,
@@ -608,12 +617,12 @@ const batalDataAntrean = async (data: any) => {
     const registrasiDetailId = await selectField(
         "registrasi_detail",
         "registrasi_detail_id",
-        `where registrasi_id = ${data.kodebooking} and status_batal is null`
+        `where registrasi_id = ${registrasiId} and status_batal is null`
     );
     const batalRegistrasiDetail: any =
         await prisma.registrasi_detail.updateMany({
             where: {
-                registrasi_id: data.kodebooking,
+                registrasi_id: registrasiId,
             },
             data: {
                 status_batal: 1,
@@ -635,7 +644,7 @@ const batalDataAntrean = async (data: any) => {
 
     const batalPenanggungRawat: any = await prisma.penanggung_rawat.updateMany({
         where: {
-            registrasi_id: data.kodebooking,
+            registrasi_id: registrasiId,
         },
         data: {
             status_batal: 1,
@@ -646,7 +655,7 @@ const batalDataAntrean = async (data: any) => {
 
     const batalDiagnosaRawat: any = await prisma.diagnosa_rawat.updateMany({
         where: {
-            registrasi_id: data.kodebooking,
+            registrasi_id: registrasiId,
         },
         data: {
             status_batal: 1,
@@ -657,7 +666,7 @@ const batalDataAntrean = async (data: any) => {
 
     const batalRujukanSep = await prisma.rujukan_sep.updateMany({
         where: {
-            registrasi_id: data.kodebooking,
+            registrasi_id: registrasiId,
         },
         data: {
             status_batal: 1,
@@ -681,9 +690,10 @@ const batalDataAntrean = async (data: any) => {
 };
 
 const checkDataRegistrasi = async (data: any) => {
+    const registrasiId = parseInt(data.kodebooking, 10);
     const checkRegistrasi: any = await prisma.registrasi.findFirst({
         where: {
-            registrasi_id: data.kodebooking,
+            registrasi_id: registrasiId,
             status_batal: null,
         },
     });
@@ -692,10 +702,11 @@ const checkDataRegistrasi = async (data: any) => {
 };
 
 const checkInData = async (data: any) => {
+    const registrasiId = parseInt(data.kodebooking, 10);
     const registrasiDetailId = await selectField(
         "registrasi_detail",
         "registrasi_detail_id",
-        `where registrasi_id = ${data.kodebooking} and status_batal is null`
+        `where registrasi_id = ${registrasiId} and status_batal is null`
     );
     const checkIn = await prisma.registrasi_urut.updateMany({
         where: {
@@ -713,7 +724,7 @@ const checkInData = async (data: any) => {
 };
 
 const insertPasienBaru = async (data: any) => {
-    const pasienId = await generateMax("pasien", "pasien_id");
+    const pasienId = await generateMax("max_pasien_idx", "pasien_id");
     const noMr = pasienId.toString().padStart(8, "0");
     let jenisKelamin;
     if (data.jeniskelamin === "L") {
@@ -906,8 +917,22 @@ const getJadwalOperasi = async (data: any) => {
     const jadwalOperasiResult: any = await prisma.$queryRawUnsafe(
         jadwalOperasi
     );
-        
+
     return jadwalOperasiResult;
+};
+
+const checkPasienId = async (nik: any) => {
+    const checkPasienIdData = await prisma.pasien.findFirst({
+        where: {
+            ktp: nik,
+        },
+        select: {
+            pasien_id: true,
+            no_mr: true,
+        },
+    });
+
+    return checkPasienIdData;
 };
 
 const urutanMaxRajal = async (
@@ -956,4 +981,5 @@ export {
     listJadwalOperasi,
     getTindakanBedah,
     getJadwalOperasi,
+    checkPasienId,
 };
