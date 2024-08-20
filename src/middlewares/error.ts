@@ -11,7 +11,7 @@ export function errLogger(
 ) {
     const dataLog = `${req.method}\t${uuid()}\t${req.ip}\t${
         req.originalUrl
-    }\t${Date.now()}\t${new Date()}\t${error}`;
+    }\t${Date.now()}\t${new Date()}\t${error}\t${JSON.stringify(req.body)}`;
     const pathFolderLog = path.join(__dirname, "../log");
     const filePath = `${pathFolderLog}/error/log_${getCurrentDate()}.txt`;
 
