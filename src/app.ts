@@ -13,7 +13,6 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT;
 
-app.use(logger);
 app.use(credentials);
 app.use(cors(corsOptions));
 
@@ -27,6 +26,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use(express.static("public"));
+app.use(logger);
 
 app.use("/", welcomeRouter);
 app.use("/api", apiRouter);

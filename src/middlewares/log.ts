@@ -6,7 +6,8 @@ import { v4 as uuid } from 'uuid';
 export function logger(req: Request, res: Response, next: NextFunction) {
     const dataLog = `${req.method}\t${uuid()}\t${req.ip}\t${
         req.originalUrl
-    }\t${Date.now()}\t${new Date()}`;
+    }\t${Date.now()}\t${new Date()}\t${JSON.stringify(req.body)}`;
+    
     const pathFolderLog = path.join(__dirname, "../log");
     const filePath = `${pathFolderLog}/access/log_${getCurrentDate()}.txt`;
 
