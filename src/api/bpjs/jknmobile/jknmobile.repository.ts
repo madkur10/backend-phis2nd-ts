@@ -245,6 +245,7 @@ const insertRujukanService = async (data: any, inputUserId: any) => {
 const insertSKDPService = async (data: any, inputUserId: any) => {};
 
 const checkDataNasabahBPJS = async (norm: any) => {
+    const noMr = norm.toString().padStart(8, "0")
     const checkDataBPJS = `SELECT
                                 pasien_nasabah.pasien_nasabah_id,
                                 pasien.pasien_id
@@ -255,7 +256,7 @@ const checkDataNasabahBPJS = async (norm: any) => {
                                 AND pasien_nasabah.nasabah_id = '543'
                                 AND pasien_nasabah.status_batal is null
                             WHERE
-                                pasien.no_mr = '${norm}'
+                                pasien.no_mr = '${noMr}'
                             Limit 1
                                 `;
     const checkData = await prisma.$queryRawUnsafe(checkDataBPJS);
