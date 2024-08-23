@@ -6,6 +6,9 @@ import {
     getKodeBagian
 } from "./antrolAuto.repository";
 import axios from "axios";
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 const updateTask = async (limit: number, task_id: number) => {
     const task_bpjs: any = await listReadyHitTaskBpjs(limit, task_id);
@@ -28,7 +31,7 @@ const updateTask = async (limit: number, task_id: number) => {
 
         task_time = Date.parse(task_time) / 1000;
 
-        const url = `http://localhost:9040/API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/UPDATE/${registrasi_id}-${task_id}-1-${task_time}`;
+        const url = `${process.env.urlPHIS}API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/UPDATE/${registrasi_id}-${task_id}-1-${task_time}`;
         const method = "GET";
         const headersData = {};
 
@@ -47,31 +50,6 @@ const updateTask = async (limit: number, task_id: number) => {
             description: "Update Task Rajal",
         };
         dataEndResponse.push(dataObj);
-
-        if (task_id == 3) {
-            const checkKodeBagian: any = await getKodeBagian(registrasi_id);
-            if (checkKodeBagian[0].kode_poli_bpjs == 'BED') {
-                const url = `https://apibpjs.rspelni.co.id/api/BPJS/JKN-MOBILE/check-in`;
-                const method = "POST";
-                const headersData = {
-                    "Content-Type": "application/json",
-                    "x-username": "xPHIS2NDx",
-                    "x-token": "a426e2dd3003c8e47174d04eda224bcb",
-                };
-                const xmldataend = {
-                    kodebooking: registrasi_id,
-                    waktu: task_time,
-                };
-    
-                const responseCheckin = await requestAxios(
-                    headersData,
-                    url,
-                    method,
-                    xmldataend
-                );
-            }
-            
-        }
     }
 
     return dataEndResponse;
@@ -90,7 +68,7 @@ const updateTaskFisio = async (limit: number, task_id: number) => {
 
     for (let i = 0; i < task_bpjs.length; i++) {
         const registrasi_id = task_bpjs[i].registrasi_id;
-        const url = `http://localhost:9040/API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/UPDATE/${registrasi_id}-${task_id}-1-${task_timex}`;
+        const url = `${process.env.urlPHIS}API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/UPDATE/${registrasi_id}-${task_id}-1-${task_timex}`;
         const method = "GET";
         const headersData = {};
 
@@ -123,7 +101,7 @@ const hitFisioNow = async (limit: number) => {
     let dataEndResponse: any = [];
 
     for (let i = 0; i < readyHitFisio.length; i++) {
-        const url = `http://localhost:9040/API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/CHECK-KODEBOOKING/${readyHitFisio[i].registrasi_id}`;
+        const url = `${process.env.urlPHIS}API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/CHECK-KODEBOOKING/${readyHitFisio[i].registrasi_id}`;
         const method = "GET";
         const headersData = {};
 
@@ -166,7 +144,7 @@ const hitFisioNow = async (limit: number) => {
                     jeniskunjungan: "2",
                     nomorreferensi: xmldata.nomorreferensi,
                 };
-                const urlAdd = `http://localhost:9040/API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/ADD-KODEBOOKING/1`;
+                const urlAdd = `${process.env.urlPHIS}API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/ADD-KODEBOOKING/1`;
                 const methodAdd = "POST";
                 const headersDataAdd = {
                     "Content-Type": "application/json",
@@ -212,7 +190,7 @@ const hitUlangAddAntrol = async (limit: number) => {
     let dataEndResponse: any = [];
 
     for (let i = 0; i < readyHitFisio.length; i++) {
-        const url = `http://localhost:9040/API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/CHECK-KODEBOOKING/${readyHitFisio[i].registrasi_id}`;
+        const url = `${process.env.urlPHIS}API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/CHECK-KODEBOOKING/${readyHitFisio[i].registrasi_id}`;
         const method = "GET";
         const headersData = {};
         let regId = readyHitFisio[i].registrasi_id;
@@ -267,7 +245,7 @@ const hitUlangAddAntrol = async (limit: number) => {
                     jeniskunjungan: "2",
                     nomorreferensi: nomorreferensinew,
                 };
-                const urlAdd = `http://localhost:9040/API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/ADD-KODEBOOKING/1`;
+                const urlAdd = `${process.env.urlPHIS}API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/ADD-KODEBOOKING/1`;
                 const methodAdd = "POST";
                 const headersDataAdd = {
                     "Content-Type": "application/json",

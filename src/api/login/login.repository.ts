@@ -1,7 +1,7 @@
-import { prisma, prismaRawQuery } from "../../db";
+import { prismaDb1, prismaDb2, prismaDb3 } from "../../db";
 
 export const loginUser = async (data: any) => {
-    const user = await prisma.users.findFirst({
+    const user = await prismaDb1.users.findFirst({
         where: {
             user_name: data.username,
             user_password: data.password

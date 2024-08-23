@@ -1,5 +1,5 @@
-import { prisma, prismaRawQuery } from "./../../db";
-import { generateMax } from "./../../db/database.handler";
+import { prismaDb1, prismaDb2, prismaDb3 } from "./../../db";
+import { generateMaxDb1 } from "./../../db/database.handler";
 import { dateNow } from "./../../middlewares/time";
 
 const input_time_now: string = dateNow();
@@ -281,7 +281,7 @@ const listReadyHitTaskBpjs = async (limit: number, task_id: number) => {
         order by random()
         limit ${limit};`;
 
-    const readyHitTaskNow = await prisma.$queryRawUnsafe(queryTask);
+    const readyHitTaskNow = await prismaDb3.$queryRawUnsafe(queryTask);
 
     return readyHitTaskNow;
 };
@@ -304,13 +304,6 @@ const listReadyHitTaskBpjsFisio = async (limit: number, task_id: number) => {
     } else if (task_id === 7) {
         filter = "and last_task = '6'";
     }
-
-    // if (new Date().getHours() < 17) {
-    //     filter_response = "and (response->>'metadata')::json->>'code' = '200'";
-    // } else {
-    //     filter_response =
-    //         "--and (response->>'metadata')::json->>'code' = '200'";
-    // }
 
     const queryTask = `with data_task as (
         select
@@ -375,13 +368,13 @@ const listReadyHitTaskBpjsFisio = async (limit: number, task_id: number) => {
             random()
         limit ${limit};`;
 
-    const readyHitTaskNow = await prisma.$queryRawUnsafe(queryTask);
-
+    const readyHitTaskNow = await prismaDb3.$queryRawUnsafe(queryTask);
+        
     return readyHitTaskNow;
 };
 
 const getPasienFisioReadyHitNow = async (limit: number) => {
-    const rawQuery = prismaRawQuery.sql`
+    const readyHitFisio = await prismaDb3.$queryRaw`
     SELECT 
         registrasi.registrasi_id,
         registrasi.pasien_id,
@@ -406,13 +399,12 @@ const getPasienFisioReadyHitNow = async (limit: number) => {
         and rujukan_sep.sep is not null
         and task_bpjs_log.response is null
     limit ${limit};`;
-    const readyHitFisio = await prisma.$queryRaw(rawQuery);
 
     return readyHitFisio;
 };
 
 const getPasienHitUlangAddAntrol = async (limit: number) => {
-    const rawQuery = prismaRawQuery.sql`
+    const rawQuery = await prismaDb3.$queryRaw`
     select
         task_bpjs_log.task_id,
         rujukan_sep.sep,
@@ -441,13 +433,12 @@ const getPasienHitUlangAddAntrol = async (limit: number) => {
         or task_bpjs_log.response->'metadata'->>'message' = 'Rujukan tidak valid')
         and task_id = '0'
     limit ${limit};`;
-    const readyHitUlangAdd = await prisma.$queryRaw(rawQuery);
 
-    return readyHitUlangAdd;
-}
+    return rawQuery;
+};
 
 const getKodeBagian = async (registrasi_id: number) => {
-    const rawQuery = prismaRawQuery.sql`
+    const rawQuery = await prismaDb3.$queryRaw`
     SELECT
         mapping_poli_bpjs.kode_poli_bpjs
     FROM
@@ -458,15 +449,14 @@ const getKodeBagian = async (registrasi_id: number) => {
         mapping_poli_bpjs.bagian_id = bagian.bagian_id
     WHERE 
         registrasi_detail.registrasi_id = ${registrasi_id};`;
-    const getMappingPoli = await prisma.$queryRaw(rawQuery);
 
-    return getMappingPoli;
-}
+    return rawQuery;
+};
 
 export {
     getPasienFisioReadyHitNow,
     listReadyHitTaskBpjs,
     listReadyHitTaskBpjsFisio,
     getPasienHitUlangAddAntrol,
-    getKodeBagian
+    getKodeBagian,
 };

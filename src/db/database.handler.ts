@@ -1,6 +1,6 @@
-import { prisma, prismaRawQuery } from "./index";
+import { prismaDb1, prismaDb2, prismaDb3 } from "./index";
 
-const generateMax = async (
+const generateMaxDb1 = async (
     sequenceName: string,
     field?: string | any,
     conditions?: string | any
@@ -12,7 +12,9 @@ const generateMax = async (
             information_schema.sequences
         where
             sequence_name = '${sequenceName}';`;
-    const sequenceCheck: any = await prisma.$queryRawUnsafe(queryCheckSequence);
+    const sequenceCheck: any = await prismaDb1.$queryRawUnsafe(
+        queryCheckSequence
+    );
 
     let generateMax;
     if (sequenceCheck.length === 0) {
@@ -22,22 +24,20 @@ const generateMax = async (
             FROM
                 ${sequenceName}
                 ${conditions};`;
-        const sequenceCheck: any = await prisma.$queryRawUnsafe(rawQuery);
+        const sequenceCheck: any = await prismaDb1.$queryRawUnsafe(rawQuery);
 
         generateMax = parseInt(sequenceCheck[0].maxid.toString());
     } else {
-        const rawQuery = prismaRawQuery.sql`
-            SELECT 
-                nextval(${sequenceName}) + 1 as nextval`;
-        const generate: any = await prisma.$queryRaw(rawQuery);
+        const rawQuery: any = await prismaDb1.$queryRaw`SELECT 
+            nextval(${sequenceName}) + 1 as nextval`;
 
-        generateMax = parseInt(generate[0].nextval.toString());
+        generateMax = parseInt(rawQuery[0].nextval.toString());
     }
 
     return generateMax;
 };
 
-const selectField = async (
+const selectFieldDb1 = async (
     tableName: string,
     field: string | any,
     conditions: string | any
@@ -48,7 +48,7 @@ const selectField = async (
                         ${tableName}
                         ${conditions}
                     Limit 1`;
-    const selectDataField: any = await prisma.$queryRawUnsafe(rawQuery);
+    const selectDataField: any = await prismaDb1.$queryRawUnsafe(rawQuery);
 
     return selectDataField[0][field];
 };
@@ -63,4 +63,4 @@ const timeHandler = async (timex: any) => {
     return formattedTime;
 };
 
-export { generateMax, selectField, timeHandler };
+export { generateMaxDb1, selectFieldDb1, timeHandler };
