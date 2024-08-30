@@ -5,7 +5,7 @@ import {
     getPasienHitUlangAddAntrol,
     getKodeBagian
 } from "./antrolAuto.repository";
-import axios from "axios";
+import { requestAxios } from "../../utils/axiosClient";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -35,7 +35,7 @@ const updateTask = async (limit: number, task_id: number) => {
         const method = "GET";
         const headersData = {};
 
-        const responseBooking = await requestAxios(
+        const responseBooking: any = await requestAxios(
             headersData,
             url,
             method,
@@ -72,7 +72,7 @@ const updateTaskFisio = async (limit: number, task_id: number) => {
         const method = "GET";
         const headersData = {};
 
-        const responseBooking = await requestAxios(
+        const responseBooking: any = await requestAxios(
             headersData,
             url,
             method,
@@ -105,7 +105,7 @@ const hitFisioNow = async (limit: number) => {
         const method = "GET";
         const headersData = {};
 
-        const responseBooking = await requestAxios(
+        const responseBooking: any = await requestAxios(
             headersData,
             url,
             method,
@@ -150,7 +150,7 @@ const hitFisioNow = async (limit: number) => {
                     "Content-Type": "application/json",
                 };
 
-                const responseAdd = await requestAxios(
+                const responseAdd: any = await requestAxios(
                     headersDataAdd,
                     urlAdd,
                     methodAdd,
@@ -206,7 +206,7 @@ const hitUlangAddAntrol = async (limit: number) => {
 
         const nomorreferensinew = `0904005R${bulan}${tahun}A${regEnd}`;
 
-        const responseBooking = await requestAxios(
+        const responseBooking: any = await requestAxios(
             headersData,
             url,
             method,
@@ -251,7 +251,7 @@ const hitUlangAddAntrol = async (limit: number) => {
                     "Content-Type": "application/json",
                 };
 
-                const responseAdd = await requestAxios(
+                const responseAdd: any = await requestAxios(
                     headersDataAdd,
                     urlAdd,
                     methodAdd,
@@ -281,38 +281,6 @@ const hitUlangAddAntrol = async (limit: number) => {
     }
 
     return dataEndResponse;
-};
-
-const requestAxios = async (
-    headersData: any,
-    url: string,
-    method: string,
-    xmldata: any
-) => {
-    let headersList = headersData;
-    let reqOptions = {};
-    if (method === "POST") {
-        headersList = {
-            "Content-Type": "application/json",
-        };
-
-        let bodyContent = JSON.stringify(xmldata);
-        reqOptions = {
-            url: url,
-            method: method,
-            headers: headersList,
-            data: bodyContent,
-        };
-    } else {
-        reqOptions = {
-            url: url,
-            method: method,
-            headers: headersList,
-        };
-    }
-
-    let response = await axios.request(reqOptions);
-    return response;
 };
 
 function getDateWithOffset(param: number) {

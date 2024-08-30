@@ -19,44 +19,12 @@ import {
     getJadwalOperasi,
     checkPasienId,
 } from "./jknmobile.repository";
-import axios from "axios";
+import { requestAxios } from "../../../utils/axiosClient";
 import * as dotenv from "dotenv";
 import { dateNow } from "./../../../middlewares/time";
 
 dotenv.config();
 const input_time_now: string = dateNow();
-
-const requestAxios = async (
-    headersData: any,
-    url: string,
-    method: string,
-    xmldata: any
-) => {
-    let headersList = headersData;
-    let reqOptions = {};
-    if (method === "POST") {
-        headersList = {
-            "Content-Type": "application/json",
-        };
-
-        let bodyContent = JSON.stringify(xmldata);
-        reqOptions = {
-            url: url,
-            method: method,
-            headers: headersList,
-            data: bodyContent,
-        };
-    } else {
-        reqOptions = {
-            url: url,
-            method: method,
-            headers: headersList,
-        };
-    }
-
-    let response = await axios.request(reqOptions);
-    return response;
-};
 
 interface DataWillOutput {
     namapoli: string;
