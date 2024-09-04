@@ -9,6 +9,8 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 const input_time_now: string = dateNow();
+const kelas = parseInt((process.env.kelas_ruang ?? '') as string, 10);
+const nasabahBpjs = parseInt((process.env.nasabahBPJS ?? '') as string, 10);
 
 const checkDpjpHfis = async (kodeDpjp: string) => {
     const dpjp_hfis = await prismaDb1.dpjp_hfis.findFirst({
@@ -129,7 +131,7 @@ const checkRegistrasiTerdaftar = async (pasien_id: any) => {
     where
         registrasi.pasien_id = ${pasien_id}
         and registrasi.tgl_masuk::DATE > now()::date
-        and pasien_nasabah.nasabah_id = '543'
+        and pasien_nasabah.nasabah_id = '${nasabahBpjs}'
         and registrasi.status_batal is null
     order by tgl_masuk::date ASC`;
     const checkRegistrasi = await prismaDb1.$queryRawUnsafe(checkRegistrasiPasien);
@@ -158,7 +160,7 @@ const checkRegistrasiTerdaftarToday = async (data: any) => {
         registrasi.pasien_id = ${data.pasien_id}
         and mapping_poli_bpjs.kode_poli_bpjs = '${data.kode_poli_bpjs}'
         and registrasi.tgl_masuk::DATE = now()::date
-        and pasien_nasabah.nasabah_id = '543'
+        and pasien_nasabah.nasabah_id = '${nasabahBpjs}'
         and registrasi.status_batal is null
     order by tgl_masuk::date ASC 
     Limit 1`;
@@ -187,15 +189,49 @@ const checkEmrTerdaftar = async (data: any) => {
     inner join emr on
         registrasi.registrasi_id = emr.registrasi_id
         and emr.status_batal is NULL
+    inner join pasien on
+        registrasi.pasien_id = pasien.pasien_id
     where
-        registrasi.pasien_id = ${data.norm}
+        pasien.no_mr = '${data.norm}'
         and mapping_poli_bpjs.kode_poli_bpjs = '${data.kodepoli}'
         and registrasi.tgl_masuk::DATE = now()::date
-        and pasien_nasabah.nasabah_id = '543'
+        and pasien_nasabah.nasabah_id = '${nasabahBpjs}'
         and registrasi.status_batal is null
         and emr.form_id = '3'
     order by tgl_masuk::date ASC 
     Limit 1`;
+    const checkRegistrasi = await prismaDb1.$queryRawUnsafe(checkEmrPasien);
+
+    return checkRegistrasi;
+};
+
+const checkEmrValidasi = async (data: any) => {
+    const checkEmrPasien = `SELECT
+        registrasi.registrasi_id,
+        emr.form_id
+    from
+        registrasi
+    inner join registrasi_detail on
+        registrasi.registrasi_id = registrasi_detail.registrasi_id
+        and registrasi_detail.status_batal is null
+    inner join bagian on
+        registrasi_detail.bagian_id = bagian.bagian_id
+        and bagian.flag_eksekutif is null
+    inner join mapping_poli_bpjs on
+        bagian.bagian_id = mapping_poli_bpjs.bagian_id
+        and mapping_poli_bpjs.status_batal is null
+    inner join pasien_nasabah on
+        pasien_nasabah.pasien_nasabah_id = registrasi.pasien_nasabah_id
+        and pasien_nasabah.status_batal is null
+    inner join emr on
+        registrasi.registrasi_id = emr.registrasi_id
+        and emr.status_batal is null
+    where
+        registrasi.registrasi_id = ${data.kodebooking}
+        and registrasi.status_batal is null
+    order by
+        tgl_masuk::date asc
+    limit 1`;
     const checkRegistrasi = await prismaDb1.$queryRawUnsafe(checkEmrPasien);
 
     return checkRegistrasi;
@@ -242,8 +278,6 @@ const insertRujukanService = async (data: any, inputUserId: any) => {
     });
 };
 
-const insertSKDPService = async (data: any, inputUserId: any) => {};
-
 const checkDataNasabahBPJS = async (norm: any) => {
     const noMr = norm.toString().padStart(8, "0")
     const checkDataBPJS = `SELECT
@@ -253,7 +287,7 @@ const checkDataNasabahBPJS = async (norm: any) => {
                                 pasien
                             LEFT JOIN pasien_nasabah ON
                                 pasien.pasien_id = pasien_nasabah.pasien_id
-                                AND pasien_nasabah.nasabah_id = '543'
+                                AND pasien_nasabah.nasabah_id = '${nasabahBpjs}'
                                 AND pasien_nasabah.status_batal is null
                             WHERE
                                 pasien.no_mr = '${noMr}'
@@ -365,8 +399,8 @@ const insertPendaftaranService = async (data: any) => {
             registrasi_id: registrasiId,
             tgl_daftar: new Date(data.data.tanggalperiksa),
             bagian_id: data.data.bagian_id,
-            kelas_id: 23,
-            hak_kelas_id: 23,
+            kelas_id: kelas,
+            hak_kelas_id: kelas,
         },
     });
 
@@ -502,9 +536,9 @@ const insertPendaftaranService = async (data: any) => {
             registrasi_detail_id: registrasiDetailId,
             pasien_id: data.pasien_id,
             bagian_id: data.data.bagian_id,
-            nasabah_id: 543,
-            kelas_ruang_id: 23,
-            hak_kelas_ruang_id: 23,
+            nasabah_id: nasabahBpjs,
+            kelas_ruang_id: kelas,
+            hak_kelas_ruang_id: kelas,
             tgl_bill: new Date(data.data.tanggalperiksa),
         },
     });
@@ -807,7 +841,7 @@ const listJadwalOperasi = async (data: any) => {
                                 registrasi.registrasi_id = registrasi_detail.registrasi_id
                             left outer join pasien_nasabah on
                                 registrasi.pasien_nasabah_id = pasien_nasabah.pasien_nasabah_id
-                                and pasien_nasabah.nasabah_id = '543'
+                                and pasien_nasabah.nasabah_id = '${nasabahBpjs}'
                             left outer join penanggung_rawat on
                                 registrasi.registrasi_id = penanggung_rawat.registrasi_id
                             left outer join users on
@@ -898,7 +932,7 @@ const getJadwalOperasi = async (data: any) => {
                                     registrasi.registrasi_id = registrasi_detail.registrasi_id
                                 left outer join pasien_nasabah on
                                     registrasi.pasien_nasabah_id = pasien_nasabah.pasien_nasabah_id
-                                    and pasien_nasabah.nasabah_id = '543'
+                                    and pasien_nasabah.nasabah_id = '${nasabahBpjs}'
                                 left outer join penanggung_rawat on
                                     registrasi.registrasi_id = penanggung_rawat.registrasi_id
                                 left outer join users on
@@ -968,7 +1002,6 @@ export {
     checkEmrTerdaftar,
     insertRujukanService,
     checkRujukanService,
-    insertSKDPService,
     checkDataNasabahBPJS,
     insertDataNasabahBPJS,
     checkDokterReadyService,
@@ -983,4 +1016,5 @@ export {
     getTindakanBedah,
     getJadwalOperasi,
     checkPasienId,
+    checkEmrValidasi,
 };

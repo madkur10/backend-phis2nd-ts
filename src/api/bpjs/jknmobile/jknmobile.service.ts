@@ -18,6 +18,7 @@ import {
     getTindakanBedah,
     getJadwalOperasi,
     checkPasienId,
+    checkEmrValidasi,
 } from "./jknmobile.repository";
 import { requestAxios } from "../../../utils/axiosClient";
 import * as dotenv from "dotenv";
@@ -25,6 +26,7 @@ import { dateNow } from "./../../../middlewares/time";
 
 dotenv.config();
 const input_time_now: string = dateNow();
+const urlPhis = process.env.urlPHIS || "";
 
 interface DataWillOutput {
     namapoli: string;
@@ -154,7 +156,7 @@ const daftarPerjanjianService = async (data: any) => {
             data.nomorreferensi
         );
         if (!checkRujukan) {
-            const urlRujukan = `http://sirs.rspelni.co.id/API/BPJS/SIMRS-VCLAIM/V2/CARIRUJUKAN/NORUJUKAN/${data.nomorreferensi}`;
+            const urlRujukan = `${urlPhis}API/BPJS/SIMRS-VCLAIM/V2/CARIRUJUKAN/NORUJUKAN/${data.nomorreferensi}`;
             const method = "GET";
             const headersData = {};
 
@@ -178,7 +180,7 @@ const daftarPerjanjianService = async (data: any) => {
             }
         }
     } else if (jeniskunjungan === 3) {
-        const urlSKDP = `http://sirs.rspelni.co.id/API/BPJS/SIMRS-VCLAIM/V2/SURAT-KONTROL/INTERNAL/CARI/${data.nomorreferensi}`;
+        const urlSKDP = `${urlPhis}API/BPJS/SIMRS-VCLAIM/V2/SURAT-KONTROL/INTERNAL/CARI/${data.nomorreferensi}`;
         const method = "GET";
         const headersData = {};
 
@@ -189,7 +191,7 @@ const daftarPerjanjianService = async (data: any) => {
 
             const checkRujukan: any = await checkRujukanService(noRujukan);
             if (!checkRujukan) {
-                const urlRujukan = `http://sirs.rspelni.co.id/API/BPJS/SIMRS-VCLAIM/V2/CARIRUJUKAN/NORUJUKAN/${noRujukan}`;
+                const urlRujukan = `${urlPhis}API/BPJS/SIMRS-VCLAIM/V2/CARIRUJUKAN/NORUJUKAN/${noRujukan}`;
                 const method = "GET";
                 const headersData = {};
 
@@ -321,6 +323,14 @@ const batalAntreanService = async (data: any) => {
         return {
             code: 201,
             message: "Data Tidak Ditemukan atau sudah dibatalkan",
+        };
+    }
+
+    const checkEmrPasien: any = await checkEmrValidasi(data);
+    if (checkEmrPasien.length > 0) {
+        return {
+            code: 201,
+            message: "Pasien Sudah diisi EMR",
         };
     }
 
