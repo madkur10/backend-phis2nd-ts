@@ -3,7 +3,7 @@ import { createJobPasien, pushJobService } from "./resources.service";
 
 export const router = Router();
 
-router.post(
+router.get(
     "/create-job-pasien/:limit",
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -33,7 +33,7 @@ router.post(
     }
 );
 
-router.post(
+router.get(
     "/push-job/:nama_endpoint/:limit",
     async (req: Request, res: Response, next: NextFunction) => {
         try {
