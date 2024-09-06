@@ -36,7 +36,7 @@ const getPatientSimrs = async (limit: number) => {
 const getPatientSatSet = async (no_mr: string) => {
     const pasienSatSet = await prismaDb2.patient.findFirst({
         where: {
-            no_mr: no_mr,
+            no_mr,
         },
         select: {
             patient_ihs_id: true,
@@ -66,7 +66,7 @@ const insertDataPatientSatSet = async (responseSatSet: any, data: any) => {
     const pasienId = parseInt(data.no_mr, 10);
     const patient = await prismaDb2.patient.create({
         data: {
-            pasien_id: pasienId.toString(),
+            pasien_id: pasienId,
             patient_name: responseSatSet.entry[0].resource.name[0].text,
             patient_ihs_id: responseSatSet.entry[0].resource.id,
             created_date: input_time_now,
@@ -82,7 +82,7 @@ const updateDataPatientSatSet = async (responseSatSet: any, data: any) => {
     const pasienId = parseInt(data.no_mr, 10);
     const patient = await prismaDb2.patient.update({
         where: {
-            pasien_id: pasienId.toString(),
+            pasien_id: pasienId,
         },
         data: {
             patient_ihs_id: responseSatSet.entry[0].resource.id,
