@@ -1,18 +1,15 @@
-import { getJobEncounter, insertJob } from "./pelayanan-rawat-jalan.repository";
-import { getPatientSatSet } from "../resources/resources.repository";
 import {
-    patientService,
-    practitionerService,
-} from "../resources/resources.service";
+    getJobEncounter,
+    updateStatusRegistrasi,
+} from "./pelayanan-rawat-jalan.repository";
+import { insertJobData } from "../resources/resources.repository";
 
-import { requestAxios } from "./../../../utils/axiosClient";
 import * as dotenv from "dotenv";
 import { environment } from "./../../../utils/config";
-import { checkTokenService } from "../generate-token/generate-token.service";
 dotenv.config();
 
-const generateJobEncounterService = async () => {
-    const jobEncounter: any = await getJobEncounter();
+const generateJobEncounterService = async (limit: number) => {
+    const jobEncounter: any = await getJobEncounter(limit);
     if (jobEncounter.length < 1) {
         return {
             message: "Tidak ada data",
@@ -20,31 +17,14 @@ const generateJobEncounterService = async () => {
         };
     } else {
         jobEncounter.forEach(async (item: any) => {
-            const dataPatient = {
-                no_mr: item.no_mr,
-                pasien_id: item.pasien_id,
-                ktp: item.ktp,
-                birthdate: item.tgl_lahir,
-                gender: item.jenis_kelamin,
-            };
-            let patientSatuSehat = await patientService(dataPatient);
-
-            const dataPractitioner = {
-                pegawai_id: item.pegawai_id,
-                nik: item.nik,
-            };
-            let practitionerSatuSehat = await practitionerService(
-                dataPractitioner
-            );
-
-            const payloadSatSet = {
+            const registrasiId = item.registrasi_id;
+            const tglLayanan = item.tgl_urut;
+            const payload = {
                 resourceType: "Encounter",
                 identifier: [
                     {
-                        system:
-                            "http://sys-ids.kemkes.go.id/encounter/" +
-                            environment.satusehat.org_id,
-                        value: item.registrasi_id,
+                        system: `http://sys-ids.kemkes.go.id/encounter/${environment.satusehat.org_id}`,
+                        value: `${item.registrasi_id}`,
                     },
                 ],
                 status: "arrived",
@@ -54,8 +34,8 @@ const generateJobEncounterService = async () => {
                     display: "ambulatory",
                 },
                 subject: {
-                    reference: `"Patient/${patientSatuSehat.patient_ihs_id}"`,
-                    display: `"${patientSatuSehat.patient_name}"`,
+                    reference: `Patient/${item.pasien_ihs_id}`,
+                    display: `${item.nama_pasien}`,
                 },
                 participant: [
                     {
@@ -71,22 +51,26 @@ const generateJobEncounterService = async () => {
                             },
                         ],
                         individual: {
-                            reference: `Practitioner/${practitionerSatuSehat.practitioner_ihs_id}`,
-                            display: `"${practitionerSatuSehat.practitioner_name}"`,
+                            reference: `Practitioner/${item.practitioner_ihs_id}`,
+                            display: `${item.nama_pegawai}`,
                         },
                     },
                 ],
                 period: {
-                    start: "2023-08-31T00:00:00+00:00",
+                    start: `${tglLayanan
+                        .toISOString()
+                        .replace(".000Z", "+00:00")}`,
                 },
                 location: [
                     {
                         location: {
-                            reference: "Location/{{Location_Poli_id}}",
-                            display: "{{Location_Poli_Name}}",
+                            reference: `Location/${item.location_id}`,
+                            display: `${item.nama_bagian}`,
                         },
                         period: {
-                            start: "2023-08-31T00:00:00+00:00",
+                            start: `${tglLayanan
+                                .toISOString()
+                                .replace(".000Z", "+00:00")}`,
                         },
                         extension: [
                             {
@@ -126,23 +110,51 @@ const generateJobEncounterService = async () => {
                     {
                         status: "arrived",
                         period: {
-                            start: "2023-08-31T00:00:00+00:00",
+                            start: `${tglLayanan
+                                .toISOString()
+                                .replace(".000Z", "+00:00")}`,
                         },
                     },
                 ],
                 serviceProvider: {
-                    reference: "Organization/" + environment.satusehat.org_id,
+                    reference: `Organization/${environment.satusehat.org_id}`,
                 },
             };
 
-            console.log(payloadSatSet);
-            
+            const dataJob = {
+                endpoint_name: "encounter",
+                status: 1,
+                method: "POST",
+                url: `/Encounter`,
+                key_simrs: registrasiId.toString(),
+                payload: payload,
+            };
+
+            const checkPatientSatSet: any = await insertJobData(dataJob);
+            if (!checkPatientSatSet) {
+                return {
+                    no_mr: item.no_mr,
+                    registrasi_id: registrasiId,
+                    status: "failed",
+                };
+            } else {
+                const updateStatus = await updateStatusRegistrasi({
+                    registrasi_id: parseInt(registrasiId, 10),
+                    status_satu_sehat: 1,
+                });
+                return {
+                    no_mr: item.no_mr,
+                    registrasi_id: registrasiId,
+                    status: "success",
+                };
+            }
         });
     }
-    
+
     return {
         message: "Job Generate Success",
         code: 200,
+        data: jobEncounter,
     };
 };
 

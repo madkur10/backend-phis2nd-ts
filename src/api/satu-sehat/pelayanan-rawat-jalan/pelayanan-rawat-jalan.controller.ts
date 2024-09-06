@@ -13,11 +13,12 @@ import { generateJobEncounterService } from "./pelayanan-rawat-jalan.service";
 dotenv.config();
 export const router = Router();
 
-router.post(
-    "/encounter",
+router.get(
+    "/encounter/:limit",
     async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const generateJob: any = await generateJobEncounterService();
+            const limit: number = parseInt(req.params.limit, 10);
+            const generateJob: any = await generateJobEncounterService(limit);
 
             if (generateJob.code === 200) {
                 res.send({
@@ -25,6 +26,7 @@ router.post(
                         message: generateJob.message,
                         code: generateJob.code,
                     },
+                    data: generateJob.data,
                 });
             } else {
                 res.status(200).json({
@@ -32,6 +34,7 @@ router.post(
                         message: generateJob.message,
                         code: generateJob.code,
                     },
+                    data: generateJob.data,
                 });
             }
         } catch (err) {
