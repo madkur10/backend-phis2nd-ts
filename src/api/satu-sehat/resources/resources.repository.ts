@@ -33,6 +33,28 @@ const getPatientSimrs = async (limit: number) => {
     return patientSimrs;
 };
 
+const getPractitionerSimrs = async (limit: number) => {
+    const practitionerSimrs = await prismaDb1.pegawai.findMany({
+        where: {
+            id_satu_sehat: null,
+            status_batal: null,
+            nik: {
+                not: null,
+            },
+        },
+        select: {
+            pegawai_id: true,
+            nama_pegawai: true,
+            nik: true,
+        },
+        orderBy: {
+            pegawai_id: "asc",
+        },
+        take: limit,
+    });
+    return practitionerSimrs;
+};
+
 const getPatientSatSet = async (no_mr: string) => {
     const pasienSatSet = await prismaDb2.patient.findFirst({
         where: {
@@ -47,15 +69,15 @@ const getPatientSatSet = async (no_mr: string) => {
     return pasienSatSet;
 };
 
-const getPractitionerSatSet = async (dataPractitioner: any) => {
-    const pegawaiId = dataPractitioner.pegawai_id;
+const getPractitionerSatSet = async (pegawaiId: any) => {
     const practitionerSatSet = await prismaDb2.practitioner.findFirst({
         where: {
-            pegawai_id: pegawaiId.toString(),
+            pegawai_id: pegawaiId,
         },
         select: {
             practitioner_ihs_id: true,
             practitioner_name: true,
+            id: true,
         },
     });
 
@@ -95,13 +117,13 @@ const updateDataPatientSatSet = async (responseSatSet: any, data: any) => {
 };
 
 const insertDataPractitionerSatSet = async (responseSatSet: any, data: any) => {
-    const idPractiitioner = await generateMaxDb2("practitioner", "id");
+    const idPractiitioner = await generateMaxDb2("max_practitioner_idx", "id");
     const practitioner = await prismaDb2.practitioner.create({
         data: {
             id: idPractiitioner,
             practitioner_name: responseSatSet.entry[0].resource.name[0].text,
             created_date: input_time_now,
-            birth_date: responseSatSet.entry[0].resource.birthDate,
+            birth_date: new Date(responseSatSet.entry[0].resource.birthDate),
             gender: responseSatSet.entry[0].resource.gender,
             practitioner_ihs_id: responseSatSet.entry[0].resource.id,
             ihs_json_data: responseSatSet,
@@ -116,12 +138,12 @@ const insertDataPractitionerSatSet = async (responseSatSet: any, data: any) => {
 const updateDataPractitionerSatSet = async (responseSatSet: any, data: any) => {
     const patient = await prismaDb2.practitioner.updateMany({
         where: {
-            nik: data.nik,
+            id: data.id,
         },
         data: {
             practitioner_name: responseSatSet.entry[0].resource.name[0].text,
             created_date: input_time_now,
-            birth_date: responseSatSet.entry[0].resource.birthDate,
+            birth_date: new Date(responseSatSet.entry[0].resource.birthDate),
             gender: responseSatSet.entry[0].resource.gender,
             practitioner_ihs_id: responseSatSet.entry[0].resource.id,
             ihs_json_data: responseSatSet,
@@ -180,6 +202,19 @@ const updateStatusPasien = async (data: any) => {
     return updateStatus;
 };
 
+const updateStatusPegawai = async (data: any) => {
+    const updateStatus = await prismaDb1.pegawai.update({
+        where: {
+            pegawai_id: data.pegawai_id,
+        },
+        data: {
+            id_satu_sehat: data.id_satu_sehat,
+        },
+    });
+
+    return updateStatus;
+};
+
 const getJob = async (endpoint_name: string, limit: number) => {
     const job = await prismaDb2.job.findMany({
         where: {
@@ -224,4 +259,6 @@ export {
     updateJobData,
     updateStatusPasien,
     getJob,
+    getPractitionerSimrs,
+    updateStatusPegawai,
 };

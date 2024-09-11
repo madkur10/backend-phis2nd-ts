@@ -8,6 +8,11 @@ import {
     updateJobData,
     updateStatusPasien,
     getJob,
+    getPractitionerSimrs,
+    getPractitionerSatSet,
+    updateStatusPegawai,
+    updateDataPractitionerSatSet,
+    insertDataPractitionerSatSet,
 } from "./resources.repository";
 import { checkTokenService } from "../generate-token/generate-token.service";
 
@@ -18,6 +23,10 @@ import {
     getEncounterSatSet,
     updateDataEncounterSatSet,
     insertDataEncounterSatSet,
+    updateStatusEmrDetail,
+    getEmrDetailSatSet,
+    updateDataEmrDetailSatSet,
+    insertDataEmrDetailSatSet,
 } from "../pelayanan-rawat-jalan/pelayanan-rawat-jalan.repository";
 
 const date = new Date();
@@ -78,6 +87,55 @@ const createJobPasien = async (limit: number) => {
     };
 };
 
+const createJobPractitioner = async (limit: number) => {
+    const getDataPractitioner = await getPractitionerSimrs(limit);
+    if (getDataPractitioner.length < 1) {
+        return {
+            message: "Tidak ada data",
+            code: 200,
+        };
+    }
+
+    let dataPractitioner: any = await Promise.all(
+        getDataPractitioner.map(async (item: any) => {
+            let pegawaiId = item.pegawai_id;
+            const dataJob = {
+                endpoint_name: "practitioner",
+                status: 1,
+                method: "GET",
+                url: `/Practitioner?identifier=https://fhir.kemkes.go.id/id/nik|${item.nik}`,
+                key_simrs: pegawaiId.toString(),
+            };
+
+            const checkPractitionerSatSet: any = await insertJobData(dataJob);
+            if (!checkPractitionerSatSet) {
+                return {
+                    pegawai_id: pegawaiId,
+                    ktp: item.ktp,
+                    nama_pegawai: item.nama_pegawai,
+                    status: "failed",
+                };
+            } else {
+                return {
+                    pegawai_id: pegawaiId,
+                    ktp: item.ktp,
+                    nama_pegawai: item.nama_pegawai,
+                    status: "success",
+                };
+            }
+        })
+    );
+
+    return {
+        data: {
+            jumlah_data: dataPractitioner.length,
+            dataPractitioner,
+        },
+        code: 200,
+        message: "success",
+    };
+};
+
 const pushJobService = async (endpoint_name: string, limit: number) => {
     const getJobRepository = await getJob(endpoint_name, limit);
     if (getJobRepository.length < 1) {
@@ -124,6 +182,20 @@ const pushJobService = async (endpoint_name: string, limit: number) => {
                     key_simrs
                 );
                 return executeEncounter;
+            } else if (item.endpoint_name === "practitioner") {
+                const executePractitioner = await executePractitionerService(
+                    response,
+                    item,
+                    key_simrs
+                );
+                return executePractitioner;
+            } else if (item.endpoint_name === "observation") {
+                const executeObservation = await executeObservationService(
+                    response,
+                    item,
+                    key_simrs
+                );
+                return executeObservation;
             }
         })
     );
@@ -309,4 +381,168 @@ const executeEncounterService = async (
     }
 };
 
-export { createJobPasien, pushJobService };
+const executePractitionerService = async (
+    response: any,
+    item: any,
+    key_simrs: string
+) => {
+    let url = item.url;
+    let nik = url.substring(58);
+
+    if (response.status === 200) {
+        if (response.data.resourceType === "OperationOutcome") {
+            const updateJob = await updateJobData({
+                id: item.id,
+                response: response.data,
+                status: 3,
+            });
+            return {
+                job_id: item.id,
+                status: "failed",
+                response: response.data,
+            };
+        } else {
+            if (response.data.total > 0) {
+                const checkPractitionerSatSet = await getPractitionerSatSet(
+                    key_simrs
+                );
+
+                if (checkPractitionerSatSet) {
+                    const updatePractitionerSatSet =
+                        await updateDataPractitionerSatSet(response.data, {
+                            pegawai_id: key_simrs,
+                            nik: nik,
+                            id: checkPractitionerSatSet.id,
+                        });
+                } else {
+                    const insertPractitionerSatSet =
+                        await insertDataPractitionerSatSet(response.data, {
+                            pegawai_id: key_simrs,
+                            nik: nik,
+                        });
+                }
+
+                const updateStatus = await updateStatusPegawai({
+                    pegawai_id: parseInt(key_simrs, 10),
+                    status_satu_sehat: 2,
+                    id_satu_sehat: response.data.entry[0].resource.id,
+                });
+
+                const updateJob = await updateJobData({
+                    id: item.id,
+                    response: response.data,
+                    status: 2,
+                });
+
+                return {
+                    job_id: item.id,
+                    status: "success",
+                    response: response.data,
+                };
+            } else {
+                const updateJob = await updateJobData({
+                    id: item.id,
+                    response: response.data,
+                    status: 3,
+                });
+                return {
+                    job_id: item.id,
+                    status: "failed",
+                    response: response.data,
+                };
+            }
+        }
+    } else {
+        const updateJob = await updateJobData({
+            id: item.id,
+            response: response.data,
+            status: 3,
+        });
+
+        return {
+            job_id: item.id,
+            status: "failed",
+            response: response.data,
+        };
+    }
+};
+
+const executeObservationService = async (
+    response: any,
+    item: any,
+    key_simrs: string
+) => {
+    if (response.status === 201) {
+        if (response.data.resourceType === "OperationOutcome") {
+            const updateStatus = await updateStatusEmrDetail({
+                emr_detail_id: parseInt(key_simrs, 10),
+                status_satu_sehat: 3,
+            });
+            const updateJob = await updateJobData({
+                id: item.id,
+                response: response.data,
+                status: 3,
+            });
+            return {
+                job_id: item.id,
+                status: "failed",
+                response: response.data,
+            };
+        } else {
+            const checkEmrDetailSatSet = await getEmrDetailSatSet(key_simrs);
+
+            if (checkEmrDetailSatSet) {
+                const updateEmrDetailSatSet = await updateDataEmrDetailSatSet(
+                    response.data,
+                    {
+                        emr_detail_id: key_simrs,
+                        id: checkEmrDetailSatSet.admission_id,
+                    }
+                );
+            } else {
+                const insertEmrDetailSatSet = await insertDataEmrDetailSatSet(
+                    response.data,
+                    {
+                        emr_detail_id: key_simrs,
+                    }
+                );
+            }
+
+            const updateStatus = await updateStatusEmrDetail({
+                emr_detail_id: parseInt(key_simrs, 10),
+                status_satu_sehat: 2,
+                id_satu_sehat: response.data.id,
+            });
+
+            const updateJob = await updateJobData({
+                id: item.id,
+                response: response.data,
+                status: 2,
+            });
+            
+            return {
+                job_id: item.id,
+                status: "success",
+                response: response.data,
+            };
+        }
+    } else {
+        const updateStatus = await updateStatusEmrDetail({
+            emr_detail_id: parseInt(key_simrs, 10),
+            status_satu_sehat: 3,
+        });
+
+        const updateJob = await updateJobData({
+            id: item.id,
+            response: response.data,
+            status: 3,
+        });
+        return {
+            job_id: item.id,
+            status: "failed",
+            response: response.data,
+        };
+    }
+};
+
+export { createJobPasien, pushJobService, createJobPractitioner };
