@@ -9,7 +9,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 const input_time_now: string = dateNow();
-const kelas = parseInt((process.env.kelas_ruang ?? '') as string, 10);
+const kelas = parseInt((process.env.kelas_ruang3 ?? '') as string, 10);
 const nasabahBpjs = parseInt((process.env.nasabahBPJS ?? '') as string, 10);
 
 const checkDpjpHfis = async (kodeDpjp: string) => {
