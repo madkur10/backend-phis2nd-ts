@@ -63,6 +63,7 @@ const getPatientSatSet = async (no_mr: string) => {
         select: {
             patient_ihs_id: true,
             patient_name: true,
+            pasien_id: true,
         },
     });
 
@@ -84,16 +85,15 @@ const getPractitionerSatSet = async (pegawaiId: any) => {
     return practitionerSatSet;
 };
 
-const insertDataPatientSatSet = async (responseSatSet: any, data: any) => {
-    const pasienId = parseInt(data.no_mr, 10);
+const insertDataPatientSatSet = async (data: any) => {
     const patient = await prismaDb2.patient.create({
         data: {
-            pasien_id: pasienId,
-            patient_name: responseSatSet.entry[0].resource.name[0].text,
-            patient_ihs_id: responseSatSet.entry[0].resource.id,
+            pasien_id: data.pasien_id,
+            patient_name: data.nama_pasien,
             created_date: input_time_now,
+            birth_date: new Date(data.tgl_lahir),
+            nik: data.nik,
             no_mr: data.no_mr,
-            ihs_json_data: responseSatSet,
         },
     });
 
@@ -101,10 +101,9 @@ const insertDataPatientSatSet = async (responseSatSet: any, data: any) => {
 };
 
 const updateDataPatientSatSet = async (responseSatSet: any, data: any) => {
-    const pasienId = parseInt(data.no_mr, 10);
     const patient = await prismaDb2.patient.update({
         where: {
-            pasien_id: pasienId,
+            pasien_id: data.pasien_id,
         },
         data: {
             patient_ihs_id: responseSatSet.entry[0].resource.id,

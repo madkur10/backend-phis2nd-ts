@@ -3,11 +3,17 @@ import {
     updateStatusRegistrasi,
     getJobObservation,
     updateStatusEmrDetail,
+    getJobCondition,
+    insertDataEmrDetailConditionSatSet,
+    insertDataEmrDetailObservationSatSet,
+    insertDataEncounterSatSet,
+    getAdmissionIdByEncounterId,
 } from "./pelayanan-rawat-jalan.repository";
 import { insertJobData } from "../resources/resources.repository";
 
 import * as dotenv from "dotenv";
 import { environment } from "./../../../utils/config";
+import { formatTanggalLokal } from "../../../middlewares";
 dotenv.config();
 
 const generateJobEncounterService = async (limit: number) => {
@@ -143,6 +149,16 @@ const generateJobEncounterService = async (limit: number) => {
                 const updateStatus = await updateStatusRegistrasi({
                     registrasi_id: parseInt(registrasiId, 10),
                     status_satu_sehat: 1,
+                });
+                let bagianId = item.bagian_id;
+                let pegawaiId = item.pegawai_id;
+                let pasienId = item.pasien_id;
+                const insertAdmission = await insertDataEncounterSatSet({
+                    bagian_id: bagianId.toString(),
+                    dr_id: pegawaiId.toString(),
+                    pasien_id: pasienId.toString(),
+                    admission_type: item.jenis_rawat,
+                    registrasi_id: item.registrasi_id,
                 });
                 return {
                     no_mr: item.no_mr,
@@ -298,6 +314,17 @@ const generateJobObservationService = async (
                         emr_detail_id: parseInt(emrDetailId, 10),
                         status_satu_sehat: 1,
                     });
+                    const getAdmissionId = await getAdmissionIdByEncounterId(
+                        item.encounter_id
+                    );
+
+                    const insertAdmissionObservation =
+                        await insertDataEmrDetailObservationSatSet({
+                            admission_id: getAdmissionId?.id,
+                            emr_detail_id: parseInt(emrDetailId, 10),
+                            value: item.value,
+                            type: item.variabel,
+                        });
                     return {
                         payload: payload,
                         emr_detail_id: emrDetailId.toString(),
@@ -315,4 +342,117 @@ const generateJobObservationService = async (
     };
 };
 
-export { generateJobEncounterService, generateJobObservationService };
+const generateJobConditionService = async (limit: number) => {
+    const jobCondition: any = await getJobCondition(limit);
+    let dataCondition: any = [];
+    if (jobCondition.length < 1) {
+        return {
+            message: "Tidak ada data",
+            code: 200,
+        };
+    } else {
+        dataCondition = await Promise.all(
+            jobCondition.map(async (item: any) => {
+                const emrDetailId = item.emr_detail_id;
+                const tglEmr = item.input_time;
+                const tglLokal = await formatTanggalLokal(tglEmr);
+                const payload = {
+                    resourceType: "Condition",
+                    clinicalStatus: {
+                        coding: [
+                            {
+                                system: "http://terminology.hl7.org/CodeSystem/condition-clinical",
+                                code: "active",
+                                display: "Active",
+                            },
+                        ],
+                    },
+                    category: [
+                        {
+                            coding: [
+                                {
+                                    system: "http://terminology.hl7.org/CodeSystem/condition-category",
+                                    code: "encounter-diagnosis",
+                                    display: "Encounter Diagnosis",
+                                },
+                            ],
+                        },
+                    ],
+                    code: {
+                        coding: [
+                            {
+                                system: "http://hl7.org/fhir/sid/icd-10",
+                                code: item.kode_diagnosa,
+                                display: item.nama_diagnosa,
+                            },
+                        ],
+                    },
+                    subject: {
+                        reference: `Patient/${item.patient_ihs_id}`,
+                        display: `Kunjungan ${item.nama_pasien} di hari ${tglLokal}`,
+                    },
+                    encounter: {
+                        reference: `Encounter/${item.encounter_id}`,
+                    },
+                    onsetDateTime: `${tglEmr
+                        .toISOString()
+                        .replace(".000Z", "+00:00")}`,
+                    recordedDate: `${tglEmr
+                        .toISOString()
+                        .replace(".000Z", "+00:00")}`,
+                };
+                const dataJob = {
+                    endpoint_name: "condition",
+                    status: 1,
+                    method: "POST",
+                    url: "/Condition",
+                    key_simrs: emrDetailId.toString(),
+                    payload: payload,
+                };
+                const checkConditionSatSet: any = await insertJobData(dataJob);
+                if (!checkConditionSatSet) {
+                    return {
+                        payload: payload,
+                        emr_detail_id: emrDetailId.toString(),
+                        status: "failed",
+                    };
+                } else {
+                    const updateStatus = await updateStatusEmrDetail({
+                        emr_detail_id: parseInt(emrDetailId, 10),
+                        status_satu_sehat: 1,
+                    });
+
+                    const getAdmissionId = await getAdmissionIdByEncounterId(
+                        item.encounter_id
+                    );
+
+                    const insertDischargeDiagnosis =
+                        await insertDataEmrDetailConditionSatSet({
+                            admission_id: getAdmissionId?.id,
+                            diag_code: item.kode_diagnosa,
+                            diag_status: item.variabel,
+                            diag_label: item.nama_diagnosa,
+                            emr_detail_id: parseInt(emrDetailId, 10),
+                        });
+                    return {
+                        payload: payload,
+                        emr_detail_id: emrDetailId.toString(),
+                        status: "success",
+                    };
+                }
+            })
+        );
+    }
+
+    return {
+        message: "OK",
+        code: 200,
+        data: dataCondition,
+    };
+};
+
+export {
+    generateJobEncounterService,
+    generateJobObservationService,
+    generateJobConditionService,
+};
