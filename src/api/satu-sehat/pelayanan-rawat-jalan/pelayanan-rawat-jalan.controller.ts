@@ -11,6 +11,7 @@ import * as dotenv from "dotenv";
 import {
     generateJobEncounterService,
     generateJobObservationService,
+    generateJobConditionService,
 } from "./pelayanan-rawat-jalan.service";
 
 dotenv.config();
@@ -55,6 +56,38 @@ router.get(
             const generateJob: any = await generateJobObservationService(
                 limit,
                 type_observation
+            );
+
+            if (generateJob.code === 200) {
+                res.send({
+                    metadata: {
+                        message: generateJob.message,
+                        code: generateJob.code,
+                    },
+                    data: generateJob.data,
+                });
+            } else {
+                res.status(200).json({
+                    metadata: {
+                        message: generateJob.message,
+                        code: generateJob.code,
+                    },
+                    data: generateJob.data,
+                });
+            }
+        } catch (err) {
+            next(err);
+        }
+    }
+);
+
+router.get(
+    "/condition/:limit",
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const limit: number = parseInt(req.params.limit, 10);
+            const generateJob: any = await generateJobConditionService(
+                limit,
             );
 
             if (generateJob.code === 200) {

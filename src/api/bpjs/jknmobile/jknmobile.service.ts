@@ -97,7 +97,7 @@ const daftarPerjanjianService = async (data: any) => {
     if (!checkNasabahBPJS[0].pasien_nasabah_id) {
         const dataNasabah = {
             pasien_id: checkNasabahBPJS[0].pasien_id,
-            nasabah_id: 543,
+            nasabah_id: process.env.nasabahBPJS,
             no_peserta: data.nomorkartu,
             input_user_id: data.input_user_id,
         };

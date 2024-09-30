@@ -308,7 +308,7 @@ const insertDataNasabahBPJS = async (data: any) => {
             input_time: input_time_now,
             input_user_id: data.input_user_id,
             pasien_id: data.pasien_id,
-            nasabah_id: data.nasabah_id,
+            nasabah_id: parseInt(data.nasabah_id, 10),
             no_peserta: data.no_peserta,
         },
     });
