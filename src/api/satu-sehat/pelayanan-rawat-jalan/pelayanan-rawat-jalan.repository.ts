@@ -6,8 +6,6 @@ import {
 } from "./../../../db/database.handler";
 import { dateNow } from "./../../../middlewares/time";
 
-const input_time_now: string = dateNow();
-
 const getJobEncounter = async (limit: number) => {
     const getEncounter = `select 
                             registrasi.registrasi_id,
@@ -99,7 +97,7 @@ const updateDataEncounterSatSet = async (responseSatSet: any, data: any) => {
         },
         data: {
             encounter_ihs_id: responseSatSet.id,
-            last_updated_date: input_time_now,
+            last_updated_date: dateNow(),
         },
     });
 };
@@ -113,7 +111,7 @@ const insertDataEncounterSatSet = async (data: any) => {
             bagian_id: data.bagian_id,
             dr_id: data.dr_id,
             pasien_id: data.pasien_id,
-            created_date: input_time_now,
+            created_date: dateNow(),
             admission_type: data.admission_type,
             registrasi_id: data.registrasi_id,
         },
@@ -162,7 +160,7 @@ const updateDataEmrDetailObservationSatSet = async (
             },
             data: {
                 observation_ihs_id: responseSatSet.id,
-                last_updated_date: input_time_now,
+                last_updated_date: dateNow(),
             },
         });
 
@@ -188,7 +186,7 @@ const insertDataEmrDetailObservationSatSet = async (data: any) => {
             admission_id: data.admission_id,
             observation_value: data.value,
             observation_type: data.type,
-            created_date: input_time_now,
+            created_date: dateNow(),
             observation_ext_id: data.emr_detail_id,
         },
     });
@@ -207,7 +205,7 @@ const updateDataEmrDetailConditionSatSet = async (
             },
             data: {
                 condition_ihs_id: responseSatSet.id,
-                last_updated_date: input_time_now,
+                last_updated_date: dateNow(),
             },
         }
     );
@@ -221,7 +219,7 @@ const insertDataEmrDetailConditionSatSet = async (data: any) => {
             admission_id: data.admission_id,
             diag_code: data.diag_code,
             diag_status: data.diag_status,
-            created_date: input_time_now,
+            created_date: dateNow(),
             diag_label: data.diag_label,
             diag_ext_id: data.emr_detail_id,
         },

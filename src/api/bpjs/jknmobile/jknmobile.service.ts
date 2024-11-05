@@ -25,7 +25,6 @@ import * as dotenv from "dotenv";
 import { dateNow } from "./../../../middlewares/time";
 
 dotenv.config();
-const input_time_now: string = dateNow();
 const urlPhis = process.env.urlPHIS || "";
 
 interface DataWillOutput {
@@ -418,7 +417,7 @@ const listJadwalOperasiService = async (data: any) => {
                     namapoli: element.namapoli ? element.namapoli : "",
                     terlaksana: element.terlaksana,
                     nopeserta: element.nopeserta,
-                    lastupdate: new Date(input_time_now).getTime(),
+                    lastupdate: new Date(dateNow()).getTime(),
                 };
 
                 new_result_end.push(new_result);

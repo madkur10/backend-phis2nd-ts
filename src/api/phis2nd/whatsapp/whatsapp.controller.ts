@@ -147,10 +147,7 @@ router.get(
                                                 <strong>Dokter</strong>
                                             </td>
                                             <td>
-                                                <strong>${
-                                                    resultConfirm.data
-                                                        .nama_pegawai
-                                                }</strong>
+                                                <strong>${resultConfirm?.data?.nama_pegawai ? resultConfirm.data.nama_pegawai : ''}</strong>
                                             </td>
                                         </tr>
                                         <tr>
@@ -276,10 +273,7 @@ router.get(
                                                 <strong>Dokter</strong>
                                             </td>
                                             <td>
-                                                <strong>${
-                                                    resultConfirm.data
-                                                        .nama_pegawai
-                                                }</strong>
+                                                <strong>${resultConfirm?.data?.nama_pegawai ? resultConfirm.data.nama_pegawai : ''}</strong>
                                             </td>
                                         </tr>
                                         <tr>

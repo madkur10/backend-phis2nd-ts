@@ -6,8 +6,6 @@ import {
 } from "./../../../db/database.handler";
 import { dateNow } from "./../../../middlewares/time";
 
-const input_time_now: string = dateNow();
-
 const getPatientSimrs = async (limit: number) => {
     const patientSimrs = await prismaDb1.pasien.findMany({
         where: {
@@ -90,7 +88,7 @@ const insertDataPatientSatSet = async (data: any) => {
         data: {
             pasien_id: data.pasien_id,
             patient_name: data.nama_pasien,
-            created_date: input_time_now,
+            created_date: dateNow(),
             birth_date: new Date(data.tgl_lahir),
             nik: data.nik,
             no_mr: data.no_mr,
@@ -107,7 +105,7 @@ const updateDataPatientSatSet = async (responseSatSet: any, data: any) => {
         },
         data: {
             patient_ihs_id: responseSatSet.entry[0].resource.id,
-            last_updated_date: input_time_now,
+            last_updated_date: dateNow(),
             ihs_json_data: responseSatSet,
         },
     });
@@ -121,7 +119,7 @@ const insertDataPractitionerSatSet = async (responseSatSet: any, data: any) => {
         data: {
             id: idPractiitioner,
             practitioner_name: responseSatSet.entry[0].resource.name[0].text,
-            created_date: input_time_now,
+            created_date: dateNow(),
             birth_date: new Date(responseSatSet.entry[0].resource.birthDate),
             gender: responseSatSet.entry[0].resource.gender,
             practitioner_ihs_id: responseSatSet.entry[0].resource.id,
@@ -141,7 +139,7 @@ const updateDataPractitionerSatSet = async (responseSatSet: any, data: any) => {
         },
         data: {
             practitioner_name: responseSatSet.entry[0].resource.name[0].text,
-            created_date: input_time_now,
+            created_date: dateNow(),
             birth_date: new Date(responseSatSet.entry[0].resource.birthDate),
             gender: responseSatSet.entry[0].resource.gender,
             practitioner_ihs_id: responseSatSet.entry[0].resource.id,
@@ -159,7 +157,7 @@ const insertJobData = async (data: any) => {
     const job = await prismaDb2.job.create({
         data: {
             id: idJob,
-            created_date: input_time_now,
+            created_date: dateNow(),
             endpoint_name: data.endpoint_name,
             payload: data.payload,
             status: data.status,
@@ -178,7 +176,7 @@ const updateJobData = async (data: any) => {
             id: data.id,
         },
         data: {
-            last_updated_date: input_time_now,
+            last_updated_date: dateNow(),
             status: data.status,
             response: data.response,
         },
