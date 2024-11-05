@@ -2,8 +2,6 @@ import { prismaDb1, prismaDb2, prismaDb3 } from "./../../db";
 import { generateMaxDb1 } from "./../../db/database.handler";
 import { dateNow } from "./../../middlewares/time";
 
-const input_time_now: string = dateNow();
-
 const listReadyHitTaskBpjs = async (limit: number, task_id: number) => {
     let filter, selectTaskTime, kondisiTask;
 

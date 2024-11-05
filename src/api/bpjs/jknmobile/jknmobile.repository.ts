@@ -8,7 +8,6 @@ import { dateNow } from "./../../../middlewares/time";
 import * as dotenv from "dotenv";
 dotenv.config();
 
-const input_time_now: string = dateNow();
 const kelas = parseInt((process.env.kelas_ruang3 ?? '') as string, 10);
 const nasabahBpjs = parseInt((process.env.nasabahBPJS ?? '') as string, 10);
 
@@ -258,7 +257,7 @@ const insertRujukanService = async (data: any, inputUserId: any) => {
     const insertRujukan = await prismaDb1.rujukan_pasien.create({
         data: {
             rujukan_pasien_id: rujukanPasienId,
-            input_time: input_time_now,
+            input_time: dateNow(),
             input_user_id: inputUserId,
             pasien_id: parseInt(data.response.rujukan.peserta.mr.noMR, 10),
             no_peserta: data.response.rujukan.peserta.noKartu,
@@ -305,7 +304,7 @@ const insertDataNasabahBPJS = async (data: any) => {
                 "max_pasien_nasabah_idx",
                 "pasien_nasabah_id"
             ),
-            input_time: input_time_now,
+            input_time: dateNow(),
             input_user_id: data.input_user_id,
             pasien_id: data.pasien_id,
             nasabah_id: parseInt(data.nasabah_id, 10),
@@ -376,7 +375,7 @@ const insertPendaftaranService = async (data: any) => {
     const insertRegistrasi = await prismaDb1.registrasi.create({
         data: {
             registrasi_id: registrasiId,
-            input_time: input_time_now,
+            input_time: dateNow(),
             input_user_id: data.data.input_user_id,
             pasien_id: data.pasien_id,
             pasien_nasabah_id: data.pasien_nasabah_id,
@@ -394,7 +393,7 @@ const insertPendaftaranService = async (data: any) => {
     const insertRegistrasiDetail = await prismaDb1.registrasi_detail.create({
         data: {
             registrasi_detail_id: registrasiDetailId,
-            input_time: input_time_now,
+            input_time: dateNow(),
             input_user_id: data.data.input_user_id,
             registrasi_id: registrasiId,
             tgl_daftar: new Date(data.data.tanggalperiksa),
@@ -474,7 +473,7 @@ const insertPendaftaranService = async (data: any) => {
     const insertRegistrasiUrut = await prismaDb1.registrasi_urut.create({
         data: {
             registrasi_urut_id: registrasiUrutId,
-            input_time: input_time_now,
+            input_time: dateNow(),
             input_user_id: data.data.input_user_id,
             registrasi_detail_id: registrasiDetailId,
             pegawai_id: pegawaiId,
@@ -491,7 +490,7 @@ const insertPendaftaranService = async (data: any) => {
     const insertPenanggungRawat = await prismaDb1.penanggung_rawat.create({
         data: {
             penanggung_rawat_id: penanggungRawatId,
-            input_time: input_time_now,
+            input_time: dateNow(),
             input_user_id: data.data.input_user_id,
             registrasi_id: registrasiId,
             rawat_user_id: data.data.dokter_id,
@@ -505,7 +504,7 @@ const insertPendaftaranService = async (data: any) => {
     const insertDiagnosaRawat = await prismaDb1.diagnosa_rawat.create({
         data: {
             diagnosa_rawat_id: diagnosaRawatId,
-            input_time: input_time_now,
+            input_time: dateNow(),
             input_user_id: data.data.input_user_id,
             registrasi_id: registrasiId,
             icd_id: 9985,
@@ -520,7 +519,7 @@ const insertPendaftaranService = async (data: any) => {
     const insertRujukanSep = await prismaDb1.rujukan_sep.create({
         data: {
             rujukan_sep_id: rujukanSepId,
-            input_time: input_time_now,
+            input_time: dateNow(),
             input_user_id: data.data.input_user_id,
             registrasi_id: registrasiId,
             no_rujukan: data.noRujukan,
@@ -531,7 +530,7 @@ const insertPendaftaranService = async (data: any) => {
     const insertBillTemp = await prismaDb1.bill_temp.create({
         data: {
             bill_temp_id: billTempId,
-            input_time: input_time_now,
+            input_time: dateNow(),
             input_user_id: data.data.input_user_id,
             registrasi_detail_id: registrasiDetailId,
             pasien_id: data.pasien_id,
@@ -551,7 +550,7 @@ const insertPendaftaranService = async (data: any) => {
         const insertSuratKontrol = await prismaDb1.surat_kontrol.create({
             data: {
                 surat_kontrol_id: suratKontrolId,
-                input_time: input_time_now,
+                input_time: dateNow(),
                 input_user_id: data.data.input_user_id,
                 no_surat_kontrol: data.data.nomorreferensi,
                 registrasi_id_kontrol: registrasiId,
@@ -572,6 +571,9 @@ const insertPendaftaranService = async (data: any) => {
         `where bagian_id = ${data.data.bagian_id}`
     );
 
+    const sevenHoursInMilliseconds = 7 * 60 * 60 * 1000;
+    const adjustedTime = Math.floor(jampelayanan.getTime() - sevenHoursInMilliseconds);
+
     return {
         registrasi_id: registrasiId,
         registrasi_detail_id: registrasiDetailId,
@@ -580,7 +582,7 @@ const insertPendaftaranService = async (data: any) => {
         jampelayanan: jampelayanan,
         dpjp: namaDPJP,
         bagian: namaBagian,
-        estimasidilayani: Math.floor(jampelayanan.getTime()),
+        estimasidilayani: adjustedTime,
     };
 };
 
@@ -644,7 +646,7 @@ const batalDataAntrean = async (data: any) => {
         },
         data: {
             status_batal: 1,
-            mod_time: input_time_now,
+            mod_time: dateNow(),
             mod_user_id: data.input_user_id,
         },
     });
@@ -661,7 +663,7 @@ const batalDataAntrean = async (data: any) => {
             },
             data: {
                 status_batal: 1,
-                mod_time: input_time_now,
+                mod_time: dateNow(),
                 mod_user_id: data.input_user_id,
             },
         });
@@ -672,7 +674,7 @@ const batalDataAntrean = async (data: any) => {
         },
         data: {
             status_batal: 1,
-            mod_time: input_time_now,
+            mod_time: dateNow(),
             mod_user_id: data.input_user_id,
         },
     });
@@ -683,7 +685,7 @@ const batalDataAntrean = async (data: any) => {
         },
         data: {
             status_batal: 1,
-            mod_time: input_time_now,
+            mod_time: dateNow(),
             mod_user_id: data.input_user_id,
         },
     });
@@ -694,7 +696,7 @@ const batalDataAntrean = async (data: any) => {
         },
         data: {
             status_batal: 1,
-            mod_time: input_time_now,
+            mod_time: dateNow(),
             mod_user_id: data.input_user_id,
         },
     });
@@ -705,7 +707,7 @@ const batalDataAntrean = async (data: any) => {
         },
         data: {
             status_batal: 1,
-            mod_time: input_time_now,
+            mod_time: dateNow(),
             mod_user_id: data.input_user_id,
         },
     });
@@ -716,7 +718,7 @@ const batalDataAntrean = async (data: any) => {
         },
         data: {
             status_batal: 1,
-            mod_time: input_time_now,
+            mod_time: dateNow(),
             mod_user_id: data.input_user_id,
         },
     });
@@ -748,10 +750,10 @@ const checkInData = async (data: any) => {
             registrasi_detail_id: registrasiDetailId,
         },
         data: {
-            mod_time: input_time_now,
+            mod_time: dateNow(),
             mod_user_id: data.input_user_id,
             status_check_in: 1,
-            tgl_check_in: input_time_now,
+            tgl_check_in: dateNow(),
         },
     });
 
@@ -771,7 +773,7 @@ const insertPasienBaru = async (data: any) => {
     const pasienBaru = await prismaDb1.pasien.create({
         data: {
             pasien_id: pasienId,
-            input_time: input_time_now,
+            input_time: dateNow(),
             input_user_id: data.input_user_id,
             no_mr: noMr,
             tgl_lahir: new Date(data.tanggallahir + "UTC"),

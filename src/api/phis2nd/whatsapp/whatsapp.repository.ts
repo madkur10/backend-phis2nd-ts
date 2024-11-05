@@ -8,15 +8,13 @@ import { dateNow } from "./../../../middlewares/time";
 import * as dotenv from "dotenv";
 dotenv.config();
 
-const input_time_now: string = dateNow();
-
 const confirmWhatsapp = async (registrasi_urut_id: number) => {
     const confirm = await prismaDb1.registrasi_urut.update({
         where: {
             registrasi_urut_id: registrasi_urut_id,
         },
         data: {
-            tgl_jam_wa_konfirmasi: input_time_now,
+            tgl_jam_wa_konfirmasi: dateNow(),
         },
     });
 
@@ -52,10 +50,10 @@ const checkDataKunjungan = async (data: string) => {
                             and registrasi_urut.status_batal is null
                         INNER JOIN bagian ON
                             registrasi_detail.bagian_id = bagian.bagian_id
-                        INNER JOIN pegawai ON
-                            registrasi_urut.pegawai_id = pegawai.pegawai_id
                         INNER JOIN pasien ON
                             registrasi.pasien_id = pasien.pasien_id
+                        LEFT JOIN pegawai ON
+                            registrasi_urut.pegawai_id = pegawai.pegawai_id
                         WHERE
                             registrasi_urut.registrasi_urut_id = '${data}'
                             AND registrasi.status_batal is null

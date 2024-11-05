@@ -6,8 +6,6 @@ import {
 } from "./../../../db/database.handler";
 import { dateNow } from "./../../../middlewares/time";
 
-const input_time_now: string = dateNow();
-
 const checkTokenExist = async () => {
     const check = await prismaDb2.token.findFirst({
         select: {
@@ -24,7 +22,7 @@ const insertToken = async (generateToken: any) => {
         data: {
             id: idToken,
             access_token: generateToken.access_token,
-            last_update_date: input_time_now,
+            last_update_date: dateNow(),
         },
     });
 
@@ -37,7 +35,7 @@ const updateToken = async (generateToken: any) => {
             id: 1,
         },
         data: {
-            last_update_date: input_time_now,
+            last_update_date: dateNow(),
             access_token: generateToken.access_token,
         },
     });
