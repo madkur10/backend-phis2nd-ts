@@ -13,6 +13,10 @@ import {
     updateStatusPegawai,
     updateDataPractitionerSatSet,
     insertDataPractitionerSatSet,
+    getDataPractitioner,
+    updateInsertIdPractitionerRepo,
+    getDataPatient,
+    updateInsertIdPatientRepo,
 } from "./resources.repository";
 import { checkTokenService } from "../generate-token/generate-token.service";
 
@@ -36,6 +40,7 @@ const formattedUtcDate = new Date(
     format(date, "yyyy-MM-dd HH:mm:ss", { timeZone }) + " UTC"
 );
 const baseUrl = environment.satusehat.url_base;
+const orgId = environment.satusehat.org_id;
 
 const createJobPasien = async (limit: number) => {
     const getDataPasien = await getPatientSimrs(limit);
@@ -616,4 +621,331 @@ const executeConditionService = async (
     }
 };
 
-export { createJobPasien, pushJobService, createJobPractitioner };
+const getPatientNikService = async (nik: string) => {
+    const tokenService = await checkTokenService();
+    if (tokenService?.code !== 200) {
+        throw new Error("Generate Token Failed");
+    }
+    let token = tokenService?.data?.access_token;
+
+    const headersData = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+    };
+    const url = `${baseUrl}/Patient?identifier=https://fhir.kemkes.go.id/id/nik|${nik}`;
+    const method = "GET";
+    const payload = null;
+    const response: any = await requestAxios(headersData, url, method, payload);
+
+    return response;
+};
+
+const getPractitionerNikService = async (nik: string) => {
+    const tokenService = await checkTokenService();
+    if (tokenService?.code !== 200) {
+        throw new Error("Generate Token Failed");
+    }
+    let token = tokenService?.data?.access_token;
+
+    const headersData = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+    };
+    const url = `${baseUrl}/Practitioner?identifier=https://fhir.kemkes.go.id/id/nik|${nik}`;
+    const method = "GET";
+    const payload = null;
+    const response: any = await requestAxios(headersData, url, method, payload);
+
+    return response;
+};
+
+const createOrganizationService = async (data: any) => {
+    const tokenService = await checkTokenService();
+
+    if (tokenService?.code !== 200) {
+        throw new Error("Generate Token Failed");
+    }
+    let token = tokenService?.data?.access_token;
+
+    const headersData = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+    };
+    const url = `${baseUrl}/Organization`;
+    const method = "POST";
+    const payload = {
+        resourceType: "Organization",
+        active: true,
+        identifier: [
+            {
+                use: "official",
+                system: "http://sys-ids.kemkes.go.id/organization/" + orgId,
+                value: data.bagian_id,
+            },
+        ],
+        type: [
+            {
+                coding: [
+                    {
+                        system: "http://terminology.hl7.org/CodeSystem/organization-type",
+                        code: "dept",
+                        display: "Hospital Department",
+                    },
+                ],
+            },
+        ],
+        name: data.nama_bagian,
+        partOf: {
+            reference: "Organization/" + orgId,
+        },
+    };
+
+    const response: any = await requestAxios(headersData, url, method, payload);
+
+    return response;
+};
+
+const getOrganizationPartofService = async (organization_id: string) => {
+    const tokenService = await checkTokenService();
+    if (tokenService?.code !== 200) {
+        throw new Error("Generate Token Failed");
+    }
+    let token = tokenService?.data?.access_token;
+
+    const headersData = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+    };
+
+    organization_id = organization_id ?? orgId;
+
+    const url = `${baseUrl}/Organization?partof=${organization_id}`;
+    const method = "GET";
+    const payload = null;
+    const response: any = await requestAxios(headersData, url, method, payload);
+
+    return response;
+};
+
+const getOrganizationIdService = async (organization_id: string) => {
+    const tokenService = await checkTokenService();
+    if (tokenService?.code !== 200) {
+        throw new Error("Generate Token Failed");
+    }
+    let token = tokenService?.data?.access_token;
+
+    const headersData = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+    };
+
+    const url = `${baseUrl}/Organization/${organization_id}`;
+    const method = "GET";
+    const payload = null;
+    const response: any = await requestAxios(headersData, url, method, payload);
+
+    return response;
+};
+
+const createLocationService = async (data: any) => {
+    const tokenService = await checkTokenService();
+
+    if (tokenService?.code !== 200) {
+        throw new Error("Generate Token Failed");
+    }
+    let token = tokenService?.data?.access_token;
+
+    const headersData = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+    };
+    const url = `${baseUrl}/Location`;
+    const method = "POST";
+    const payload = {
+        resourceType: "Location",
+        identifier: [
+            {
+                system: "http://sys-ids.kemkes.go.id/location/" + orgId,
+                value: data.bagian_id,
+            },
+        ],
+        status: "active",
+        name: data.nama_bagian,
+        description: "This is a location for " + data.nama_bagian,
+        mode: "instance",
+        physicalType: {
+            coding: [
+                {
+                    system: "http://terminology.hl7.org/CodeSystem/location-physical-type",
+                    code: "ro",
+                    display: "Room",
+                },
+            ],
+        },
+        managingOrganization: {
+            reference: "Organization/" + data.organization_id,
+        },
+    };
+
+    const response: any = await requestAxios(headersData, url, method, payload);
+
+    return response;
+};
+
+const getLocationIdService = async (location_id: string) => {
+    const tokenService = await checkTokenService();
+    if (tokenService?.code !== 200) {
+        throw new Error("Generate Token Failed");
+    }
+    let token = tokenService?.data?.access_token;
+
+    const headersData = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+    };
+
+    const url = `${baseUrl}/Location/${location_id}`;
+    const method = "GET";
+    const payload = null;
+    const response: any = await requestAxios(headersData, url, method, payload);
+
+    return response;
+};
+
+const getPractitionerSendAllService = async (limit: string) => {
+    const tokenService = await checkTokenService();
+    if (tokenService?.code !== 200) {
+        throw new Error("Generate Token Failed");
+    }
+    let token = tokenService?.data?.access_token;
+
+    const getDataPractitionerReady: any = await getDataPractitioner(limit);
+
+    const resultPush: any = [];
+    if (getDataPractitionerReady.length > 0) {
+        const promises = getDataPractitionerReady.map(async (element: any) => {
+            const headersData = {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            };
+            const url = `${baseUrl}/Practitioner?identifier=https://fhir.kemkes.go.id/id/nik|${element.nik}`;
+            const method = "GET";
+            const payload = null;
+            const response: any = await requestAxios(
+                headersData,
+                url,
+                method,
+                payload
+            );
+
+            if (response.status === 200) {
+                if (response.data.total === 0) {
+                    resultPush.push({
+                        ...element,
+                        status: "gagal",
+                    });
+                } else {
+                    const updateInsertIdPractitioner =
+                        updateInsertIdPractitionerRepo(
+                            element.pegawai_id,
+                            response.data,
+                            response.data.entry[0].resource.id,
+                            response.data.entry[0].resource.resourceType
+                        );
+                    resultPush.push({
+                        ...element,
+                        status: "sukses",
+                    });
+                }
+            } else {
+                resultPush.push({
+                    ...element,
+                    status: "gagal",
+                });
+            }
+        });
+        await Promise.all(promises);
+    }
+
+    return resultPush;
+};
+
+const getPatientSendAllService = async (limit: string) => {
+    const tokenService = await checkTokenService();
+    if (tokenService?.code !== 200) {
+        throw new Error("Generate Token Failed");
+    }
+    let token = tokenService?.data?.access_token;
+
+    const getDataPatientReady: any = await getDataPatient(limit);
+
+    const resultPush: any = [];
+    if (getDataPatientReady.length > 0) {
+        const promises = getDataPatientReady.map(async (element: any) => {
+            const headersData = {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            };
+            const url = `${baseUrl}/Patient?identifier=https://fhir.kemkes.go.id/id/nik|${element.ktp}`;
+            const method = "GET";
+            const payload = null;
+            const response: any = await requestAxios(
+                headersData,
+                url,
+                method,
+                payload
+            );
+
+            if (response.status === 200) {
+                if (response.data.total === 0) {
+                    const updateInsertIdPatient = updateInsertIdPatientRepo(
+                        element.pasien_id,
+                        response.data,
+                        "0",
+                        "Patient",
+                        1
+                    );
+                    resultPush.push({
+                        ...element,
+                        status: "gagal",
+                    });
+                } else {
+                    const updateInsertIdPatient = updateInsertIdPatientRepo(
+                        element.pasien_id,
+                        response.data,
+                        response.data.entry[0].resource.id,
+                        response.data.entry[0].resource.resourceType
+                    );
+                    resultPush.push({
+                        ...element,
+                        status: "sukses",
+                    });
+                }
+            } else {
+                resultPush.push({
+                    ...element,
+                    status: "gagal",
+                    response: response.data,
+                });
+            }
+        });
+        await Promise.all(promises);
+    }
+
+    return resultPush;
+};
+
+export {
+    createJobPasien,
+    pushJobService,
+    createJobPractitioner,
+    getPatientNikService,
+    getPractitionerNikService,
+    createOrganizationService,
+    getOrganizationPartofService,
+    getOrganizationIdService,
+    createLocationService,
+    getLocationIdService,
+    getPractitionerSendAllService,
+    getPatientSendAllService,
+};
