@@ -1,5 +1,6 @@
 import { prismaDb1, prismaDb2, prismaDb3 } from "./../../../db";
 import {
+    generateMaxDb1,
     generateMaxDb2,
     selectFieldDb2,
     timeHandler,
@@ -244,6 +245,98 @@ const getJob = async (endpoint_name: string, limit: number) => {
     return job;
 };
 
+const getDataPractitioner = async (limit: string) => {
+    const getDataPegawai = await prismaDb1.$queryRaw`
+        SELECT
+            pegawai.pegawai_id,
+            pegawai.nik
+        FROM
+            pegawai
+        LEFT JOIN resources ON
+            resources.key_simrs = pegawai.pegawai_id
+        WHERE
+            pegawai.status_batal is null
+            AND pegawai.nik IS NOT NULL
+            AND resources.resources_id IS NULL
+        ORDER BY
+            pegawai.pegawai_id ASC
+        LIMIT ${parseInt(limit, 10)};
+    `;
+    return getDataPegawai;
+};
+
+const updateInsertIdPractitionerRepo = async (
+    pegawai_id: number,
+    response: any,
+    id: string,
+    type: string
+) => {
+    const resourcesId = await generateMaxDb1(
+        "max_resources_idx",
+        "resources_id"
+    );
+    const insertRujukan = await prismaDb1.resources.create({
+        data: {
+            resources_id: resourcesId,
+            input_time: dateNow(),
+            input_user_id: 1,
+            key_simrs: pegawai_id,
+            key_satu_sehat: id,
+            resources_type: type,
+            response: response,
+        },
+    });
+};
+
+const getDataPatient = async (limit: string) => {
+    const getDataPasien = await prismaDb1.$queryRaw`
+        SELECT
+            pasien.pasien_id,
+            TRIM(pasien.ktp) ktp
+        FROM
+            pasien
+        LEFT JOIN resources ON
+            resources.key_simrs = pasien.pasien_id
+        WHERE
+            pasien.status_batal is null
+            AND pasien.ktp IS NOT NULL
+            AND LENGTH(TRIM(pasien.ktp)) = 16
+            AND resources.resources_id IS NULL
+        ORDER BY
+            pasien.pasien_id DESC
+        LIMIT ${parseInt(limit, 10)};
+    `;
+    return getDataPasien;
+};
+
+const updateInsertIdPatientRepo = async (
+    pasien_id: number,
+    response: any,
+    id: string,
+    type: string,
+    gagal: number | null = null
+) => {
+    const resourcesId = await generateMaxDb1(
+        "max_resources_idx",
+        "resources_id"
+    );
+    let data: any = {
+        resources_id: resourcesId,
+        input_time: dateNow(),
+        input_user_id: 1,
+        key_simrs: pasien_id,
+        key_satu_sehat: id,
+        resources_type: type,
+        response: response,
+    };
+    if (gagal === 1) {
+        data.status = 1;
+    }
+    const insertRujukan = await prismaDb1.resources.create({
+        data,
+    });
+};
+
 export {
     getPatientSatSet,
     insertDataPatientSatSet,
@@ -258,4 +351,8 @@ export {
     getJob,
     getPractitionerSimrs,
     updateStatusPegawai,
+    getDataPractitioner,
+    updateInsertIdPractitionerRepo,
+    getDataPatient,
+    updateInsertIdPatientRepo,
 };
