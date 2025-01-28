@@ -215,7 +215,6 @@ const checkEmrValidasi = async (data: any) => {
         and registrasi_detail.status_batal is null
     inner join bagian on
         registrasi_detail.bagian_id = bagian.bagian_id
-        and bagian.flag_eksekutif is null
     inner join mapping_poli_bpjs on
         bagian.bagian_id = mapping_poli_bpjs.bagian_id
         and mapping_poli_bpjs.status_batal is null
