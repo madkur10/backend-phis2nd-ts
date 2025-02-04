@@ -8,9 +8,21 @@ import {
 } from "./../../../../db/database.handler";
 import { dateNow } from "./../../../../middlewares/time";
 
-const getDataEncounter = async (limit: string) => {
-    const getDataPasien = await prismaDb1.$queryRaw`
-        select
+const getDataEncounter = async (limit: string, registrasi_id: string = "") => {
+    let queryRegistrasi;
+    let queryDate;
+    if (registrasi_id) {
+        queryDate = "";
+        queryRegistrasi = `AND registrasi.registrasi_id = ${parseInt(
+            registrasi_id,
+            10
+        )}`;
+    } else {
+        queryDate = `AND registrasi.tgl_masuk::date = now()::date`;
+        queryRegistrasi = "";
+    }
+
+    const getDataPasien = `select
             distinct
             registrasi.registrasi_id Registration_ID,
             registrasi_urut.tgl_urut,
@@ -53,11 +65,14 @@ const getDataEncounter = async (limit: string) => {
             registrasi.registrasi_id = transaction_satu_sehat.key_simrs
         where 
             registrasi.status_batal is null
-            and registrasi.tgl_masuk::date = now()::date
             and transaction_satu_sehat.transaction_satu_sehat_id is null
-        limit ${parseInt(limit, 10)};
-    `;
-    return getDataPasien;
+            ${queryDate}
+            ${queryRegistrasi}
+        limit ${parseInt(limit, 10)};`;
+
+    const getDataPasienNew = await prismaDb1.$queryRawUnsafe(getDataPasien);
+
+    return getDataPasienNew;
 };
 
 const updateInsertIdEncounterRepo = async (

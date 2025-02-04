@@ -3,6 +3,7 @@ import {
     sendEncounterService,
     getEncounterIdService,
     getEncounterSubjectService,
+    sendEncounterRegistrasiService,
 } from "./encounter.service";
 import { body, param, validationResult } from "express-validator";
 
@@ -82,6 +83,26 @@ router.get(
         try {
             const limit: string = req.params.limit;
             const sendEncounter = await sendEncounterService(limit);
+
+            res.status(200).json({
+                metadata: {
+                    code: 200,
+                    msg: "Pengerjaan Selesai!",
+                },
+                response: sendEncounter,
+            });
+        } catch (err) {
+            next(err);
+        }
+    }
+);
+
+router.get(
+    "/send-encounter/registrasi_id/:registrasi_id",
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const registrasi_id: string = req.params.registrasi_id;
+            const sendEncounter = await sendEncounterRegistrasiService(registrasi_id);
 
             res.status(200).json({
                 metadata: {
