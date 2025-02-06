@@ -43,11 +43,12 @@ const getDataCondition = async (limit: string) => {
             and emr.form_id = 3
         inner join emr_detail on
             emr.emr_id = emr_detail.emr_id
+            and emr_detail.variabel = 'primary'
             and emr_detail.objek_id in (42)
             and emr_detail.status_batal is null
-            and emr_detail.value ~ '^\d+$'
         inner join transaction_satu_sehat on
             registrasi.registrasi_id = transaction_satu_sehat.key_simrs
+            and transaction_satu_sehat.transaction_type = 'Encounter'
         inner join icd on
             emr_detail.value::int = icd.icd_id
         left outer join transaction_satu_sehat transaction_satu_sehat_condition on
