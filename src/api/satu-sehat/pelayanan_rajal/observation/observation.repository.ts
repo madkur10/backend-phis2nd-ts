@@ -60,12 +60,14 @@ const getDataObservation = async (limit: string) => {
             and emr_detail.status_batal is null
         inner join transaction_satu_sehat on
             registrasi.registrasi_id = transaction_satu_sehat.key_simrs
+            and transaction_satu_sehat.transaction_type = 'Encounter'
         left outer join transaction_satu_sehat transaction_satu_sehat_observation on
-	        emr_detail.emr_detail_id = transaction_satu_sehat_observation.key_simrs 
+	    emr_detail.emr_detail_id = transaction_satu_sehat_observation.key_simrs 
         where 
             registrasi.status_batal is null
             and registrasi.tgl_masuk::date = now()::date
             and transaction_satu_sehat.key_satu_sehat is not null
+            and transaction_satu_sehat.key_satu_sehat <> '0'
             and transaction_satu_sehat_observation.transaction_satu_sehat_id is null
         limit ${parseInt(limit, 10)};
     `;
@@ -73,7 +75,7 @@ const getDataObservation = async (limit: string) => {
 };
 
 const updateInsertIdObservationRepo = async (
-    registrasi_id: number,
+    emr_detail_id: bigint,
     payload: any,
     response: any,
     id: string,
@@ -89,7 +91,7 @@ const updateInsertIdObservationRepo = async (
         input_time: dateNow(),
         input_user_id: 1,
         payload: payload,
-        key_simrs: registrasi_id,
+        key_simrs: emr_detail_id,
         key_satu_sehat: id,
         transaction_type: type,
         response: response,
