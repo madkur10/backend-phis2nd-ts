@@ -277,7 +277,7 @@ const insertRujukanService = async (data: any, inputUserId: any) => {
 };
 
 const checkDataNasabahBPJS = async (norm: any) => {
-    const noMr = norm.toString().padStart(8, "0")
+    const noMr = norm.toString().trim().padStart(8, "0")
     const checkDataBPJS = `SELECT
                                 pasien_nasabah.pasien_nasabah_id,
                                 pasien.pasien_id
