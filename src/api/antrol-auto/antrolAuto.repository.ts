@@ -306,6 +306,7 @@ const listReadyHitTaskBpjsFisio = async (limit: number, task_id: number) => {
     const queryTask = `with data_task as (
         select
             registrasi.registrasi_id,
+            registrasi.tgl_masuk::date,
             pasien.no_mr,
             pasien.nama_pasien,
             rujukan_sep.sep,

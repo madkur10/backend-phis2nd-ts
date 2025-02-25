@@ -62,11 +62,12 @@ const updateTaskFisio = async (limit: number, task_id: number) => {
     }
 
     let dataEndResponse: any = [];
-    let task_time = getDateWithOffset(task_id);
-    // task_time.setHours(task_time.getHours() - 7);
-    let task_timex = Date.parse(task_time) / 1000;
-
+    let task_time = ''
+    let task_timex;
     for (let i = 0; i < task_bpjs.length; i++) {
+        task_time = getDateWithOffset(task_id, task_bpjs[i].tgl_masuk);
+        // task_time.setHours(task_time.getHours() - 7);
+        task_timex = Date.parse(task_time) / 1000;
         const registrasi_id = task_bpjs[i].registrasi_id;
         const url = `${process.env.urlPHIS}API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/UPDATE/${registrasi_id}-${task_id}-1-${task_timex}`;
         const method = "GET";
@@ -283,12 +284,13 @@ const hitUlangAddAntrol = async (limit: number) => {
     return dataEndResponse;
 };
 
-function getDateWithOffset(param: number) {
+function getDateWithOffset(param: number, tanggal: Date) {
     if (param < 1 || param > 7) {
         throw new Error("Parameter harus antara 1 dan 7");
     }
 
     const now = new Date();
+    const dateNownya = new Date(tanggal);
     
     // Menambahkan 7 jam untuk menyesuaikan dengan zona waktu Asia/Jakarta
     // now.setHours(now.getHours() + 7);
@@ -310,9 +312,9 @@ function getDateWithOffset(param: number) {
     }
 
     // Format tanggal menjadi 'YYYY-MM-DD HH:mm:ss.SSS'
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
+    const year = dateNownya.getFullYear();
+    const month = String(dateNownya.getMonth() + 1).padStart(2, "0");
+    const day = String(dateNownya.getDate()).padStart(2, "0");
     const hours = String(now.getHours()).padStart(2, "0");
     const minutes = String(now.getMinutes()).padStart(2, "0");
     const seconds = String(now.getSeconds()).padStart(2, "0");
