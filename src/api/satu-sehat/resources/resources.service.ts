@@ -17,6 +17,7 @@ import {
     updateInsertIdPractitionerRepo,
     getDataPatient,
     updateInsertIdPatientRepo,
+    getDataKfa,
 } from "./resources.repository";
 import { checkTokenService } from "../generate-token/generate-token.service";
 
@@ -935,6 +936,27 @@ const getPatientSendAllService = async (limit: string) => {
     return resultPush;
 };
 
+const getResourcesKfaService = async (kfa_name: string) => {
+    const getDataKfaReady: any = await getDataKfa(kfa_name);
+
+    let datax;
+    let code;
+    let data;
+
+    if (getDataKfaReady.length > 0) {
+        code = 200;
+        data = getDataKfaReady;
+    } else {
+        code = 201;
+        data = ''
+    }
+
+    return (datax = {
+        status: code,
+        data: data,
+    });
+};
+
 export {
     createJobPasien,
     pushJobService,
@@ -948,4 +970,5 @@ export {
     getLocationIdService,
     getPractitionerSendAllService,
     getPatientSendAllService,
+    getResourcesKfaService,
 };

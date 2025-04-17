@@ -12,6 +12,7 @@ import {
     getOrganizationPartofService,
     createLocationService,
     getLocationIdService,
+    getResourcesKfaService,
 } from "./resources.service";
 import { body, param, validationResult } from "express-validator";
 
@@ -518,6 +519,60 @@ router.get(
                         msg: "Operation failed!",
                     },
                     response: getLocation.data,
+                });
+            }
+        } catch (err) {
+            next(err);
+        }
+    }
+);
+
+router.get(
+    "/kfa/kfa-name/:kfa_name",
+    param('kfa_name').notEmpty().isString().isLength({ min: 5 }),
+    async (req: Request, res: Response, next: NextFunction) => {
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            res.status(201).send({
+                response: errors.array(),
+                metadata: {
+                    code: 400,
+                    message: "Validation error",
+                },
+            });
+            return;
+        }
+
+        try {
+            const kfa_name: string = req.params.kfa_name;
+            const resourcesKfa = await getResourcesKfaService(kfa_name);
+
+            if (resourcesKfa.status === 200) {
+                if (resourcesKfa.data.total === 0) {
+                    res.status(200).json({
+                        metadata: {
+                            code: 201,
+                            msg: "Data tidak tersedia!",
+                        },
+                        response: resourcesKfa.data,
+                    });
+                } else {
+                    res.status(200).json({
+                        metadata: {
+                            code: 200,
+                            msg: "Operation completed successfully!",
+                        },
+                        response: resourcesKfa.data,
+                    });
+                }
+            } else {
+                res.status(200).json({
+                    metadata: {
+                        code: 201,
+                        msg: "Data tidak tersedia!",
+                    },
+                    response: resourcesKfa.data,
                 });
             }
         } catch (err) {

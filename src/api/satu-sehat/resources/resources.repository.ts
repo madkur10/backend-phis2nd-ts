@@ -99,6 +99,23 @@ const insertDataPatientSatSet = async (data: any) => {
     return patient;
 };
 
+const getDataKfa = async (kfa_name: string) => {
+    const kfa_data = await prismaDb2.kfa_references.findMany({
+        where: {
+            kfa_name: {
+                contains: kfa_name,
+                mode: "insensitive",
+            },
+        },
+        select: {
+            kfa_code: true,
+            kfa_name: true,
+        },
+    });
+
+    return kfa_data;
+};
+
 const updateDataPatientSatSet = async (responseSatSet: any, data: any) => {
     const patient = await prismaDb2.patient.update({
         where: {
@@ -355,4 +372,5 @@ export {
     updateInsertIdPractitionerRepo,
     getDataPatient,
     updateInsertIdPatientRepo,
+    getDataKfa,
 };
