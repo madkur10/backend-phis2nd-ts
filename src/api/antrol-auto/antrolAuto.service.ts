@@ -10,8 +10,13 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-const updateTask = async (limit: number, task_id: number) => {
-    const task_bpjs: any = await listReadyHitTaskBpjs(limit, task_id);
+const updateTask = async (limit: number, task_id: number, backdate = false) => {
+    let task_bpjs: any = ''
+    if (backdate === true) {
+        task_bpjs = await listReadyHitTaskBpjs(limit, task_id, true);
+    } else {
+        task_bpjs = await listReadyHitTaskBpjs(limit, task_id);
+    }
     if (task_bpjs.length < 1) {
         return false;
     }

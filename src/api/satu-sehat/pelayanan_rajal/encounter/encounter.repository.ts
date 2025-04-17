@@ -42,7 +42,7 @@ const getDataEncounter = async (limit: string, registrasi_id: string = "") => {
             and registrasi_urut.status_batal is null
         inner join bagian on
             registrasi_detail.bagian_id = bagian.bagian_id
-            and bagian.referensi_bagian = 1
+            and bagian.referensi_bagian in (1, 313)
         inner join pegawai on
             registrasi_urut.pegawai_id = pegawai.pegawai_id
         inner join pasien on

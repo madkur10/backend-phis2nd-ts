@@ -314,6 +314,20 @@ const insertDataNasabahBPJS = async (data: any) => {
     return insertDataNasabah;
 };
 
+const checkHariLiburMerah = async (data: any) => {
+    const hari_libur = await prismaDb1.tanggal_merah.findFirst({
+        where: {
+            tgl_libur: new Date(data.tanggalperiksa),
+            status_batal: null
+        },
+        select: {
+            tanggal_merah_id: true,
+        },
+    });
+
+    return hari_libur;
+}
+
 const checkDokterReadyService = async (data: any) => {
     const hari = new Date(data.tanggalperiksa).getDay();
     const checkDataDokterReady = `select
@@ -1018,4 +1032,5 @@ export {
     getJadwalOperasi,
     checkPasienId,
     checkEmrValidasi,
+    checkHariLiburMerah,
 };

@@ -19,6 +19,7 @@ import {
     getJadwalOperasi,
     checkPasienId,
     checkEmrValidasi,
+    checkHariLiburMerah,
 } from "./jknmobile.repository";
 import { requestAxios } from "../../../utils/axiosClient";
 import * as dotenv from "dotenv";
@@ -218,6 +219,14 @@ const daftarPerjanjianService = async (data: any) => {
                 code: 201,
                 message: responseSKDP.data.metadata.message,
             };
+        }
+    }
+
+    const checkHariLibur: any = await checkHariLiburMerah(data);
+    if (checkHariLibur) {
+        return {
+            code: 201,
+            message: "Hari ini merupakan tanggal merah nasional",
         }
     }
 

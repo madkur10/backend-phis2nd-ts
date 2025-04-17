@@ -30,7 +30,7 @@ const getDataCondition = async (limit: string) => {
             and registrasi_detail.status_batal is null
         inner join bagian on
             registrasi_detail.bagian_id = bagian.bagian_id
-            and bagian.referensi_bagian = 1
+            and bagian.referensi_bagian in (1, 313)
         inner join pasien on
             registrasi.pasien_id = pasien.pasien_id
         inner join resources resources_patient on
