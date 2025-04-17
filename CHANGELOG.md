@@ -6,6 +6,7 @@
 
 ##CHANGES
   - [CORE - GLOBAL] Perubahan pada service pengiriman data melalui axios (dibuat file sendiri src/utils/axiosClient.ts)
+  - [CORE - SATU SEHAT] Penambahan parameter bagian HD.
 
 ##FIXING AND BUG FIXING
   - 

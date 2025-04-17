@@ -35,7 +35,7 @@ const getDataObservation = async (limit: string) => {
             and registrasi_urut.status_batal is null
         inner join bagian on
             registrasi_detail.bagian_id = bagian.bagian_id
-            and bagian.referensi_bagian = 1
+            and bagian.referensi_bagian in (1, 313)
         inner join pegawai on
             registrasi_urut.pegawai_id = pegawai.pegawai_id
         inner join pasien on
@@ -53,7 +53,7 @@ const getDataObservation = async (limit: string) => {
         inner join emr on
             registrasi.registrasi_id = emr.registrasi_id
             and emr.status_batal is null
-            and emr.form_id = 6
+            and emr.form_id in (6, 36)
         inner join emr_detail on
             emr.emr_id = emr_detail.emr_id
             and emr_detail.objek_id in (6, 7, 13, 12, 14)
@@ -62,7 +62,7 @@ const getDataObservation = async (limit: string) => {
             registrasi.registrasi_id = transaction_satu_sehat.key_simrs
             and transaction_satu_sehat.transaction_type = 'Encounter'
         left outer join transaction_satu_sehat transaction_satu_sehat_observation on
-	    emr_detail.emr_detail_id = transaction_satu_sehat_observation.key_simrs 
+            emr_detail.emr_detail_id = transaction_satu_sehat_observation.key_simrs 
         where 
             registrasi.status_batal is null
             and registrasi.tgl_masuk::date = now()::date

@@ -2,8 +2,14 @@ import { prismaDb1, prismaDb2, prismaDb3 } from "./../../db";
 import { generateMaxDb1 } from "./../../db/database.handler";
 import { dateNow } from "./../../middlewares/time";
 
-const listReadyHitTaskBpjs = async (limit: number, task_id: number) => {
+const listReadyHitTaskBpjs = async (limit: number, task_id: number, backdate = false) => {
     let filter, selectTaskTime, kondisiTask;
+    let valueBackDate = "";
+    if (backdate === true) {
+        valueBackDate = ` between '2025-04-14' AND now()::date`
+    } else {
+        valueBackDate = ` = now()::date`;
+    }
 
     if (new Date().getHours() < 19) {
         if (task_id === 1) {
