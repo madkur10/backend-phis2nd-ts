@@ -23,9 +23,23 @@ import {
     jadwalOperasiService,
 } from "./jknmobile.service";
 import { checkDpjpHfis, checkPoliHfis } from "./jknmobile.repository";
+import {
+    isLocked,
+    createLock,
+    removeLock,
+    ensureLockDir,
+} from "./../../../utils/requestLock";
 
 dotenv.config();
 export const router = Router();
+
+function generateLockKey(payload: any) {
+    const norm = payload.norm || "null";
+    const poli = payload.kodepoli || "null";
+    const tanggal = payload.tanggalperiksa || "null";
+
+    return `lock-${norm}-${poli}-${tanggal}`;
+}
 
 router.get(
     "/get-auth",
@@ -205,6 +219,17 @@ router.post(
         body("nomorreferensi").notEmpty(),
     ],
     async (req: Request, res: Response, next: NextFunction) => {
+        const payload = req.body;
+        const lockKey = generateLockKey(payload);
+
+        ensureLockDir();
+
+        if (isLocked(lockKey)) {
+            return res.status(429).json({
+                message: "Permintaan sedang diproses. Silakan tunggu sebentar.",
+            });
+        }
+
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
@@ -217,6 +242,8 @@ router.post(
                 });
                 return;
             }
+
+            createLock(lockKey);
 
             const createRegistrasi: any = await daftarPerjanjianService(
                 req.body
@@ -241,6 +268,8 @@ router.post(
             }
         } catch (err) {
             next(err);
+        } finally {
+            removeLock(lockKey);
         }
     }
 );
