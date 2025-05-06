@@ -254,7 +254,7 @@ const listReadyHitTaskBpjs = async (limit: number, task_id: number, backdate = f
             registrasi.registrasi_id = rujukan_Sep.registrasi_id
         where
             1 = 1
-            and registrasi.tgl_masuk::date = ${valueBackDate}
+            and registrasi.tgl_masuk::date ${valueBackDate}
             and response is not null
             and (
                 (response->>'metadata')::json->>'code' = '200'
