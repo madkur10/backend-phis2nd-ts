@@ -62,7 +62,8 @@ const getDataObservation = async (limit: string) => {
             registrasi.registrasi_id = transaction_satu_sehat.key_simrs
             and transaction_satu_sehat.transaction_type = 'Encounter'
         left outer join transaction_satu_sehat transaction_satu_sehat_observation on
-            emr_detail.emr_detail_id = transaction_satu_sehat_observation.key_simrs 
+            emr_detail.emr_detail_id = transaction_satu_sehat_observation.key_simrs
+            and transaction_satu_sehat_observation.transaction_type = 'Observation'
         where 
             registrasi.status_batal is null
             and registrasi.tgl_masuk::date = now()::date

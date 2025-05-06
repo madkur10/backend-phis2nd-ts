@@ -63,6 +63,7 @@ const getDataEncounter = async (limit: string, registrasi_id: string = "") => {
             and emr.form_id = 3
         left outer join transaction_satu_sehat on
             registrasi.registrasi_id = transaction_satu_sehat.key_simrs
+            and transaction_satu_sehat.transaction_type = 'Encounter'
         where 
             registrasi.status_batal is null
             and transaction_satu_sehat.transaction_satu_sehat_id is null
