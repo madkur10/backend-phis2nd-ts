@@ -6,7 +6,7 @@ const listReadyHitTaskBpjs = async (limit: number, task_id: number, backdate = f
     let filter, selectTaskTime, kondisiTask;
     let valueBackDate = "";
     if (backdate === true) {
-        valueBackDate = ` between '2025-04-14' AND now()::date`
+        valueBackDate = ` = now()::date - interval '1 day'`
     } else {
         valueBackDate = ` = now()::date`;
     }
