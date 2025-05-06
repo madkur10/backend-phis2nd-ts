@@ -52,7 +52,8 @@ const getDataCondition = async (limit: string) => {
         inner join icd on
             emr_detail.value::int = icd.icd_id
         left outer join transaction_satu_sehat transaction_satu_sehat_condition on
-            emr_detail.emr_detail_id = transaction_satu_sehat_condition.key_simrs 
+            emr_detail.emr_detail_id = transaction_satu_sehat_condition.key_simrs
+            and transaction_satu_sehat_condition.transaction_type = 'Condition' 
         where 
             registrasi.status_batal is null
             and registrasi.tgl_masuk::date = now()::date
