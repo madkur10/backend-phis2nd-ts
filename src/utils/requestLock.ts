@@ -22,5 +22,8 @@ export function createLock(key: string) {
 }
 
 export function removeLock(key: string) {
-    fs.unlinkSync(getLockFilePath(key));
+    const lockFilePath = getLockFilePath(key);
+    if (fs.existsSync(lockFilePath)) {
+        fs.unlinkSync(lockFilePath);
+    }
 }
