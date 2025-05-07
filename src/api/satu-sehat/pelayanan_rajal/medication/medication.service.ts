@@ -452,18 +452,30 @@ const sendMedicationDispenseService = async (limit: string) => {
                         code: `${mapDrugForm(element.satuan_obat)}`,
                         value: element.jumlah_obat,
                     },
-                    daysSupply: {
-                        value: element.jumlah_supply,
-                        unit: "Day",
-                        system: "http://unitsofmeasure.org",
-                        code: "d",
-                    },
-                    ...(element.tglPrepared ? { whenPrepared: `${tglPrepared
-                        .toISOString()
-                        .replace(".000Z", "+00:00")}` } : {}),
-                    ...(element.tglOver ? { whenOver: `${tglOver
-                        .toISOString()
-                        .replace(".000Z", "+00:00")}` } : {}),
+                    ...(element.jumlah_supply || element.jumlah_supply > 0
+                        ? {
+                              daysSupply: {
+                                  value: element.jumlah_supply,
+                                  unit: "Day",
+                                  system: "http://unitsofmeasure.org",
+                                  code: "d",
+                              },
+                          }
+                        : {}),
+                    ...(element.tglPrepared
+                        ? {
+                              whenPrepared: `${tglPrepared
+                                  .toISOString()
+                                  .replace(".000Z", "+00:00")}`,
+                          }
+                        : {}),
+                    ...(element.tglOver
+                        ? {
+                              whenOver: `${tglOver
+                                  .toISOString()
+                                  .replace(".000Z", "+00:00")}`,
+                          }
+                        : {}),
                     dosageInstruction: [
                         {
                             sequence: 1,
