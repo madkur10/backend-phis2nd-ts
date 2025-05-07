@@ -56,6 +56,7 @@ const getDataMedicationCreate = async (limit: string) => {
             and registrasi.tgl_masuk::date = now()::date
             and transaction_encounter.key_satu_sehat is not null
             and transaction_medication.transaction_satu_sehat_id is null
+        order by registrasi.registrasi_id asc
         limit ${parseInt(limit, 10)};
     `;
     return getDataMedication;
@@ -74,7 +75,7 @@ const getDataMedicationCreateRequestRepo = async (limit: string) => {
         transaction_satu_sehat_condition.key_satu_sehat diagnosis_primer,
         icd.nama_diagnosa,
         peresepan_obat_detail.jumlah jumlah_obat,
-        peresepan_obat_detail.satuan_aturan_pakai satuan_obat,
+        barang.satuan_pakai satuan_obat,
         peresepan_obat_detail.input_time authoredOn,
         peresepan_obat.peresepan_obat_id
     from
@@ -91,6 +92,7 @@ const getDataMedicationCreateRequestRepo = async (limit: string) => {
     inner join transaction_satu_sehat transaction_encounter on
         registrasi.registrasi_id = transaction_encounter.key_simrs
         and transaction_encounter.transaction_type = 'Encounter'
+        and transaction_encounter.key_satu_sehat <> '0'
     inner join pasien on
         registrasi.pasien_id = pasien.pasien_id
     inner join resources resources_patient on
@@ -117,11 +119,13 @@ const getDataMedicationCreateRequestRepo = async (limit: string) => {
     inner join transaction_satu_sehat transaction_satu_sehat_condition on
         emr_detail.emr_detail_id = transaction_satu_sehat_condition.key_simrs
         and transaction_satu_sehat_condition.transaction_type = 'Condition'
+        and transaction_satu_sehat_condition.key_satu_sehat <> '0'
     inner join barang on
         peresepan_obat_detail.barang_id = barang.barang_id
     inner join transaction_satu_sehat transaction_satu_sehat_medication on
         peresepan_obat_detail.peresepan_obat_detail_id = transaction_satu_sehat_medication.key_simrs
         and transaction_satu_sehat_medication.transaction_type = 'Medication'
+        and transaction_satu_sehat_medication.key_satu_sehat <> '0'
     left join transaction_satu_sehat transaction_satu_sehat_medication_request on
         peresepan_obat_detail.peresepan_obat_detail_id = transaction_satu_sehat_medication_request.key_simrs
         and transaction_satu_sehat_medication_request.transaction_type = 'MedicationRequest'
@@ -129,6 +133,8 @@ const getDataMedicationCreateRequestRepo = async (limit: string) => {
         peresepan_obat_detail.status_batal is null
         and registrasi.tgl_masuk::date = now()::date
         and transaction_satu_sehat_medication_request.transaction_satu_sehat_id is null
+    order by
+	    registrasi.registrasi_id asc
     limit ${parseInt(limit, 10)};
     `;
 
@@ -168,6 +174,7 @@ const getDataMedicationCreateDispenseRepo = async (limit: string) => {
     inner join transaction_satu_sehat as transaction_encounter on
         registrasi.registrasi_id = transaction_encounter.key_simrs
         and transaction_encounter.transaction_type = 'Encounter'
+        and transaction_encounter.key_satu_sehat <> '0'
     inner join peresepan_obat on
         registrasi_detail.registrasi_detail_id = peresepan_obat.registrasi_detail_id
     inner join peresepan_obat_detail on
@@ -175,6 +182,7 @@ const getDataMedicationCreateDispenseRepo = async (limit: string) => {
     inner join transaction_satu_sehat transaction_medication on
         peresepan_obat_detail.peresepan_obat_detail_id = transaction_medication.key_simrs
         and transaction_medication.transaction_type = 'MedicationRequest'
+        and transaction_medication.key_satu_sehat <> '0'
     inner join peresepan_obat_dispense on
         peresepan_obat_detail.peresepan_obat_detail_id = peresepan_obat_dispense.peresepan_obat_detail_id
     inner join barang on
@@ -190,9 +198,11 @@ const getDataMedicationCreateDispenseRepo = async (limit: string) => {
         and registrasi.tgl_masuk::date = now()::date
         and transaction_encounter.key_satu_sehat is not null
         and transaction_satu_sehat_medication_create_dispense.transaction_satu_sehat_id is null
+    order by
+	    registrasi.registrasi_id asc
     limit ${parseInt(limit, 10)};
     `;
-
+    
     return getDataMedication;
 };
 
@@ -211,13 +221,20 @@ const getDataMedicationDispenseRepo = async (limit: string) => {
         bagian.nama_bagian location_name,
         transaction_satu_sehat_medication_request.key_satu_sehat medication_request_id,
         peresepan_obat_dispense.dispense jumlah_obat,
-        peresepan_obat_dispense.satuan_aturan_pakai satuan_obat,
+        barang.satuan_pakai satuan_obat,
         peresepan_obat_dispense.sigma_1,
-        case
-            when (peresepan_obat_dispense.sigma_1 is not null
-            and peresepan_obat_dispense.sigma_2 is not null) then peresepan_obat_dispense.dispense / (peresepan_obat_dispense.sigma_1::int * peresepan_obat_dispense.sigma_2::int)
-            else null
-        end
+        CASE
+		    WHEN 
+		        peresepan_obat_dispense.sigma_1 IS NOT NULL AND
+		        peresepan_obat_dispense.sigma_2 IS NOT NULL AND
+		        peresepan_obat_dispense.sigma_1 ~ '^\d+$' AND  -- regex: hanya digit
+		        peresepan_obat_dispense.sigma_2 ~ '^\d+$'
+		    THEN 
+		        peresepan_obat_dispense.dispense / 
+		        (peresepan_obat_dispense.sigma_1::int * peresepan_obat_dispense.sigma_2::int)
+		    ELSE 
+		        0
+		END
         jumlah_supply,
         peresepan_obat.start_tracking,
         peresepan_obat.end_tracking
@@ -288,6 +305,8 @@ const getDataMedicationDispenseRepo = async (limit: string) => {
         peresepan_obat_detail.status_batal is null
         and registrasi.tgl_masuk::date = now()::date
         and transaction_satu_sehat_medication_dispense.transaction_satu_sehat_id is null
+    order by
+	    registrasi.registrasi_id asc
     limit ${parseInt(limit, 10)};
     `;
 
