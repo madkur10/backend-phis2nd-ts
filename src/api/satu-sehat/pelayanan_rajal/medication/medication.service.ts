@@ -492,9 +492,13 @@ const sendMedicationDispenseService = async (limit: string) => {
                                     },
                                     doseQuantity: {
                                         value: parseInt(element.sigma_1, 10),
-                                        unit: `${mapDrugForm(element.satuan_obat)}`,
+                                        unit: `${mapDrugForm(
+                                            element.satuan_obat
+                                        )}`,
                                         system: "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
-                                        code: `${mapDrugForm(element.satuan_obat)}`,
+                                        code: `${mapDrugForm(
+                                            element.satuan_obat
+                                        )}`,
                                     },
                                 },
                             ],
