@@ -13,6 +13,7 @@ import {
     createLocationService,
     getLocationIdService,
     getResourcesKfaService,
+    createLocationBedService,
 } from "./resources.service";
 import { body, param, validationResult } from "express-validator";
 
@@ -464,6 +465,54 @@ router.post(
                     response: {
                         practitioner_ihs_id: createLocation.id,
                         resources_type: createLocation.resourceType,
+                        raw_response: createLocation.data,
+                    },
+                });
+            } else {
+                res.status(200).json({
+                    metadata: {
+                        code: 201,
+                        msg: "Operation failed!",
+                    },
+                    response: createLocation.data,
+                });
+            }
+        } catch (err) {
+            next(err);
+        }
+    }
+);
+
+router.post(
+    "/location-bed",
+    body(["nama_bed", "bed_id", "location_bagian_id"]).notEmpty().isString(),
+    async (req: Request, res: Response, next: NextFunction) => {
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            res.status(201).send({
+                response: errors.array(),
+                metadata: {
+                    code: 400,
+                    message: "Validation error",
+                },
+            });
+            return;
+        }
+
+        try {
+            const data = req.body;
+            const createLocation = await createLocationBedService(data);
+
+            if (createLocation.status === 201) {
+                res.status(200).json({
+                    metadata: {
+                        code: 200,
+                        msg: "Operation completed successfully!",
+                    },
+                    response: {
+                        location_id: createLocation.data.id,
+                        resources_type: createLocation.data.resourceType + ' Bed',
                         raw_response: createLocation.data,
                     },
                 });

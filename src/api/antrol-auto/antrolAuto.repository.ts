@@ -2,11 +2,11 @@ import { prismaDb1, prismaDb2, prismaDb3 } from "./../../db";
 import { generateMaxDb1 } from "./../../db/database.handler";
 import { dateNow } from "./../../middlewares/time";
 
-const listReadyHitTaskBpjs = async (limit: number, task_id: number, backdate = false) => {
+const listReadyHitTaskBpjs = async (limit: number, task_id: number, backdate = false, tglAwal: string = "", tglAkhir: string = "") => {
     let filter, selectTaskTime, kondisiTask;
     let valueBackDate = "";
     if (backdate === true) {
-        valueBackDate = ` = now()::date - interval '1 day'`
+        valueBackDate = ` between '${tglAwal}' and '${tglAkhir}'`;
     } else {
         valueBackDate = ` = now()::date`;
     }
@@ -458,10 +458,50 @@ const getKodeBagian = async (registrasi_id: number) => {
     return rawQuery;
 };
 
+const listReadyHitTaskBpjsNol = async (limit: number, tglAwal: string, tglAkhir: string) => {
+    const queryTask = `select
+        pasien.nama_pasien,
+        registrasi.registrasi_id,
+        registrasi.tgl_masuk,
+        bagian.nama_bagian,
+        pegawai.nama_pegawai
+    from
+        registrasi
+    inner join pasien on
+        registrasi.pasien_id = pasien.pasien_id 
+    inner join registrasi_detail on
+        registrasi.registrasi_id = registrasi_detail.registrasi_id
+    inner join registrasi_urut on
+        registrasi_detail.registrasi_detail_id = registrasi_urut.registrasi_detail_id
+    inner join bagian on 
+        registrasi_detail.bagian_id = bagian.bagian_id
+        and referensi_bagian = 1
+        and nama_bagian not like '%ANESTESI%'
+    inner join pegawai on
+        registrasi_urut.pegawai_id = pegawai.pegawai_id
+    inner join pasien_nasabah on
+        registrasi.pasien_nasabah_id = pasien_nasabah.pasien_nasabah_id
+        and nasabah_id = 543
+    inner join emr on
+        registrasi.registrasi_id = emr.registrasi_id 
+        and form_id = 3
+    left outer join task_bpjs_log on
+        registrasi.registrasi_id = task_bpjs_log.registrasi_id
+        and task_id = '0'
+    where
+        registrasi.status_batal is null
+        and tgl_masuk::date between '${tglAwal}' and '${tglAkhir}'
+        and task_bpjs_log_id is null
+    limit ${limit};`;
+    
+    return await prismaDb1.$queryRawUnsafe(queryTask);
+};
+
 export {
     getPasienFisioReadyHitNow,
     listReadyHitTaskBpjs,
     listReadyHitTaskBpjsFisio,
     getPasienHitUlangAddAntrol,
     getKodeBagian,
+    listReadyHitTaskBpjsNol,
 };
