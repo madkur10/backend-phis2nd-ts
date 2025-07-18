@@ -793,6 +793,55 @@ const createLocationService = async (data: any) => {
     return response;
 };
 
+const createLocationBedService = async (data: any) => {
+    const tokenService = await checkTokenService();
+
+    if (tokenService?.code !== 200) {
+        throw new Error("Generate Token Failed");
+    }
+    let token = tokenService?.data?.access_token;
+
+    const headersData = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+    };
+    const url = `${baseUrl}/Location`;
+    const method = "POST";
+    const payload = {
+        resourceType: "Location",
+        identifier: [
+            {
+                system: "http://sys-ids.kemkes.go.id/location/" + orgId,
+                value: data.bed_id,
+            },
+        ],
+        status: "active",
+        name: data.nama_bed,
+        description: "This is a location for " + data.nama_bed,
+        mode: "instance",
+        physicalType: {
+            coding: [
+                {
+                    system: "http://terminology.hl7.org/CodeSystem/location-physical-type",
+                    code: "ro",
+                    display: "Room",
+                },
+            ],
+        },
+        managingOrganization: {
+            reference: `Organization/${orgId}`,
+        },
+        partOf: {
+            reference: `Location/${data.location_bagian_id}`,
+            display: `${data.nama_bed}`
+        }
+    };
+
+    const response: any = await requestAxios(headersData, url, method, payload);
+
+    return response;
+};
+
 const getLocationIdService = async (location_id: string) => {
     const tokenService = await checkTokenService();
     if (tokenService?.code !== 200) {
@@ -971,4 +1020,5 @@ export {
     getPractitionerSendAllService,
     getPatientSendAllService,
     getResourcesKfaService,
+    createLocationBedService
 };

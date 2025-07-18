@@ -3,17 +3,18 @@ import {
     listReadyHitTaskBpjs,
     listReadyHitTaskBpjsFisio,
     getPasienHitUlangAddAntrol,
-    getKodeBagian
+    listReadyHitTaskBpjsNol,
+    getKodeBagian,
 } from "./antrolAuto.repository";
 import { requestAxios } from "../../utils/axiosClient";
 import * as dotenv from "dotenv";
 
 dotenv.config();
 
-const updateTask = async (limit: number, task_id: number, backdate = false) => {
-    let task_bpjs: any = ''
+const updateTask = async (limit: number, task_id: number, backdate = false, tglAwal: string = "", tglAkhir: string = "") => {
+    let task_bpjs: any = "";
     if (backdate === true) {
-        task_bpjs = await listReadyHitTaskBpjs(limit, task_id, true);
+        task_bpjs = await listReadyHitTaskBpjs(limit, task_id, true, tglAwal, tglAkhir);
     } else {
         task_bpjs = await listReadyHitTaskBpjs(limit, task_id);
     }
@@ -49,7 +50,9 @@ const updateTask = async (limit: number, task_id: number, backdate = false) => {
 
         const dataObj = {
             id: registrasi_id,
-            task_time: new Date(task_time_current.setHours(task_time_current.getHours() + 7)),
+            task_time: new Date(
+                task_time_current.setHours(task_time_current.getHours() + 7)
+            ),
             url: url,
             response: responseBooking.data.metadata.message,
             description: "Update Task Rajal",
@@ -67,7 +70,7 @@ const updateTaskFisio = async (limit: number, task_id: number) => {
     }
 
     let dataEndResponse: any = [];
-    let task_time = ''
+    let task_time = "";
     let task_timex;
     for (let i = 0; i < task_bpjs.length; i++) {
         task_time = getDateWithOffset(task_id, task_bpjs[i].tgl_masuk);
@@ -84,7 +87,7 @@ const updateTaskFisio = async (limit: number, task_id: number) => {
             method,
             null
         );
-        
+
         const dataObj = {
             id: registrasi_id,
             task_time: task_time,
@@ -289,6 +292,38 @@ const hitUlangAddAntrol = async (limit: number) => {
     return dataEndResponse;
 };
 
+const updateTaskNol = async (limit: number, tglAwal: string, tglAkhir: string) => {
+    const task_bpjs: any = await listReadyHitTaskBpjsNol(limit, tglAwal, tglAkhir);
+    if (task_bpjs.length < 1) {
+        return false;
+    }
+    if (task_bpjs.length < 1) {
+        return false;
+    }
+
+    let dataEndResponse: any = [];
+    for (let i = 0; i < task_bpjs.length; i++) {
+        const url = `${process.env.urlPHIS}API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/CHECK-KODEBOOKING/${task_bpjs[i].registrasi_id}`;
+        const method = "GET";
+        const headersData = {};
+
+        const responseBooking: any = await requestAxios(
+            headersData,
+            url,
+            method,
+            null
+        );
+
+        const dataObj = {
+            id: task_bpjs[i].registrasi_id,
+            response: responseBooking.data.metadata.message,
+        };
+        dataEndResponse.push(dataObj);
+    }
+
+    return dataEndResponse;
+};
+
 function getDateWithOffset(param: number, tanggal: Date) {
     if (param < 1 || param > 7) {
         throw new Error("Parameter harus antara 1 dan 7");
@@ -296,7 +331,7 @@ function getDateWithOffset(param: number, tanggal: Date) {
 
     const now = new Date();
     const dateNownya = new Date(tanggal);
-    
+
     // Menambahkan 7 jam untuk menyesuaikan dengan zona waktu Asia/Jakarta
     // now.setHours(now.getHours() + 7);
 
@@ -328,4 +363,10 @@ function getDateWithOffset(param: number, tanggal: Date) {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
 }
 
-export { hitFisioNow, updateTask, updateTaskFisio, hitUlangAddAntrol };
+export {
+    hitFisioNow,
+    updateTask,
+    updateTaskFisio,
+    hitUlangAddAntrol,
+    updateTaskNol,
+};
