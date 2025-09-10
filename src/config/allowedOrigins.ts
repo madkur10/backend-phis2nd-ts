@@ -4,4 +4,5 @@ export const allowedOrigins = [
     "http://localhost:4400",
     "http://10.38.27.200",
     "http://localhost:8080",
+    "http://sirs.rspelni.co.id",
 ];
