@@ -35,6 +35,10 @@ app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
 app.use(logger);
 
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
+
 // 🔹 CORS manual (opsional kalau corsOptions sudah cukup)
 app.use((req: Request, res: Response, next: NextFunction) => {
     res.header("Access-Control-Allow-Origin", "*");

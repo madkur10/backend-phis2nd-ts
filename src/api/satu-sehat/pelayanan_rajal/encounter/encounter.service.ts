@@ -3,6 +3,7 @@ import { checkTokenService } from "../../generate-token/generate-token.service";
 import {
     getDataEncounter,
     updateInsertIdEncounterRepo,
+    updateUpdateIdEncounterRepo,
 } from "./encounter.repository";
 
 import { requestAxios } from "../../../../utils/axiosClient";
@@ -346,32 +347,64 @@ const sendEncounterRegistrasiService = async (registrasi_id: string) => {
             );
 
             if (response.status === 201) {
-                const updateInsertIdPatient = updateInsertIdEncounterRepo(
-                    element.registration_id,
-                    payload,
-                    response.data,
-                    response.data.id,
-                    response.data.resourceType
-                );
-                resultPush.push({
-                    ...element,
-                    status: "sukses",
-                });
+                if (element.transaction_satu_sehat_id) {
+                    const updateInsertIdPatient = updateUpdateIdEncounterRepo(
+                        element.registration_id,
+                        payload,
+                        response.data,
+                        response.data.id,
+                        response.data.resourceType,
+                        null,
+                        element.transaction_satu_sehat_id
+                    );
+                    resultPush.push({
+                        ...element,
+                        status: "sukses",
+                    });
+                } else {
+                    const updateInsertIdPatient = updateInsertIdEncounterRepo(
+                        element.registration_id,
+                        payload,
+                        response.data,
+                        response.data.id,
+                        response.data.resourceType
+                    );
+                    resultPush.push({
+                        ...element,
+                        status: "sukses",
+                    });
+                }
             } else {
-                const updateInsertIdPatient = updateInsertIdEncounterRepo(
-                    element.registration_id,
-                    payload,
-                    response.data,
-                    "0",
-                    "Encounter",
-                    1
-                );
+                if (element.transaction_satu_sehat_id) {
+                    const updateInsertIdPatient = updateUpdateIdEncounterRepo(
+                        element.registration_id,
+                        payload,
+                        response.data,
+                        "0",
+                        "Encounter",
+                        1,
+                        element.transaction_satu_sehat_id
+                    );
+                    resultPush.push({
+                        ...element,
+                        status: "sukses",
+                    });
+                } else {
+                    const updateInsertIdPatient = updateInsertIdEncounterRepo(
+                        element.registration_id,
+                        payload,
+                        response.data,
+                        "0",
+                        "Encounter",
+                        1
+                    );
 
-                resultPush.push({
-                    ...element,
-                    status: "gagal",
-                    response: response.data,
-                });
+                    resultPush.push({
+                        ...element,
+                        status: "gagal",
+                        response: response.data,
+                    });
+                }
             }
         });
         await Promise.all(promises);
