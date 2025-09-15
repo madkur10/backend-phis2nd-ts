@@ -11,15 +11,19 @@ import { dateNow } from "./../../../../middlewares/time";
 const getDataEncounter = async (limit: string, registrasi_id: string = "") => {
     let queryRegistrasi;
     let queryDate;
+    let queryWhereTransaction;
     if (registrasi_id) {
         queryDate = "";
         queryRegistrasi = `AND registrasi.registrasi_id = ${parseInt(
             registrasi_id,
             10
         )}`;
+
+        queryWhereTransaction = "AND (transaction_satu_sehat.transaction_satu_sehat_id is null or transaction_satu_sehat.key_satu_sehat = '0')";
     } else {
         queryDate = `AND registrasi.tgl_masuk::date = now()::date`;
         queryRegistrasi = "";
+        queryWhereTransaction = `AND transaction_satu_sehat.transaction_satu_sehat_id is null`;
     }
 
     const getDataPasien = `select
@@ -31,7 +35,8 @@ const getDataEncounter = async (limit: string, registrasi_id: string = "") => {
             resources_practitioner.key_satu_sehat Practitioner_ID,
             pegawai.nama_pegawai Practitioner_Name,
             resources_location.key_satu_sehat Location_Poli_id,
-            bagian.nama_bagian Location_Poli_Name
+            bagian.nama_bagian Location_Poli_Name,
+            transaction_satu_sehat.transaction_satu_sehat_id
         from
             registrasi
         inner join registrasi_detail on
@@ -66,7 +71,7 @@ const getDataEncounter = async (limit: string, registrasi_id: string = "") => {
             and transaction_satu_sehat.transaction_type = 'Encounter'
         where 
             registrasi.status_batal is null
-            and transaction_satu_sehat.transaction_satu_sehat_id is null
+            ${queryWhereTransaction}
             ${queryDate}
             ${queryRegistrasi}
         limit ${parseInt(limit, 10)};`;
@@ -106,4 +111,36 @@ const updateInsertIdEncounterRepo = async (
     });
 };
 
-export { getDataEncounter, updateInsertIdEncounterRepo };
+const updateUpdateIdEncounterRepo = async (
+    registrasi_id: number,
+    payload: any,
+    response: any,
+    id: string,
+    type: string,
+    gagal: number | null = null,
+    transaction_satu_sehat_id: number | null = null,
+) => {
+    let data: any = {
+        mod_time: dateNow(),
+        mod_user_id: 1,
+        payload: payload,
+        key_simrs: registrasi_id,
+        key_satu_sehat: id,
+        transaction_type: type,
+        response: response,
+    };
+    if (gagal === 1) {
+        data.status = 1;
+    }
+    if (transaction_satu_sehat_id) {
+        data.transaction_satu_sehat_id = transaction_satu_sehat_id;
+    }
+    const updateRujukan = await prismaDb1.transaction_satu_sehat.update({
+        where: {
+            transaction_satu_sehat_id: parseInt(data.transaction_satu_sehat_id, 10),
+        },
+        data,
+    });
+};
+
+export { getDataEncounter, updateInsertIdEncounterRepo, updateUpdateIdEncounterRepo };

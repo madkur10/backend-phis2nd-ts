@@ -8,8 +8,28 @@ import {
 } from "./../../../../db/database.handler";
 import { dateNow } from "./../../../../middlewares/time";
 
-const getDataObservation = async (limit: string) => {
-    const getDataPasien = await prismaDb1.$queryRaw`
+const getDataObservation = async (
+    limit: string,
+    emr_detail_id: string = ""
+) => {
+    let queryEmrDetail;
+    let queryDate;
+    let queryWhereTransaction;
+    if (emr_detail_id) {
+        queryDate = "";
+        queryEmrDetail = `AND emr_detail.emr_detail_id = ${parseInt(
+            emr_detail_id,
+            10
+        )}`;
+
+        queryWhereTransaction = "AND (transaction_satu_sehat_observation.transaction_satu_sehat_id is null or transaction_satu_sehat_observation.key_satu_sehat = '0')";
+    } else {
+        queryDate = `AND registrasi.tgl_masuk::date = now()::date`;
+        queryEmrDetail = "";
+        queryWhereTransaction = `AND transaction_satu_sehat_observation.transaction_satu_sehat_id is null`;
+    }
+
+    const getDataPasien = `
         select
             distinct
             registrasi.registrasi_id Registration_ID,
@@ -24,7 +44,8 @@ const getDataObservation = async (limit: string) => {
             emr_detail.emr_detail_id,
             emr_detail.objek_id,
             emr_detail.input_time input_time_emr,
-            emr_detail.value
+            emr_detail.value,
+            transaction_satu_sehat_observation.transaction_satu_sehat_id
         from
             registrasi
         inner join registrasi_detail on
@@ -66,13 +87,16 @@ const getDataObservation = async (limit: string) => {
             and transaction_satu_sehat_observation.transaction_type = 'Observation'
         where 
             registrasi.status_batal is null
-            and registrasi.tgl_masuk::date = now()::date
             and transaction_satu_sehat.key_satu_sehat is not null
             and transaction_satu_sehat.key_satu_sehat <> '0'
-            and transaction_satu_sehat_observation.transaction_satu_sehat_id is null
+            ${queryEmrDetail}
+            ${queryDate}
+            ${queryWhereTransaction}
         limit ${parseInt(limit, 10)};
     `;
-    return getDataPasien;
+    const getDataPasienNew = await prismaDb1.$queryRawUnsafe(getDataPasien);
+
+    return getDataPasienNew;
 };
 
 const updateInsertIdObservationRepo = async (
@@ -105,4 +129,43 @@ const updateInsertIdObservationRepo = async (
     });
 };
 
-export { getDataObservation, updateInsertIdObservationRepo };
+const updateUpdateIdObservationRepo = async (
+    registrasi_id: number,
+    payload: any,
+    response: any,
+    id: string,
+    type: string,
+    gagal: number | null = null,
+    transaction_satu_sehat_id: number | null = null
+) => {
+    let data: any = {
+        mod_time: dateNow(),
+        mod_user_id: 1,
+        payload: payload,
+        key_simrs: registrasi_id,
+        key_satu_sehat: id,
+        transaction_type: type,
+        response: response,
+    };
+    if (gagal === 1) {
+        data.status = 1;
+    }
+    if (transaction_satu_sehat_id) {
+        data.transaction_satu_sehat_id = transaction_satu_sehat_id;
+    }
+    const updateRujukan = await prismaDb1.transaction_satu_sehat.update({
+        where: {
+            transaction_satu_sehat_id: parseInt(
+                data.transaction_satu_sehat_id,
+                10
+            ),
+        },
+        data,
+    });
+};
+
+export {
+    getDataObservation,
+    updateInsertIdObservationRepo,
+    updateUpdateIdObservationRepo,
+};
