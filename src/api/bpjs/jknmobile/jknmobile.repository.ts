@@ -368,6 +368,11 @@ const checkDokterReadyService = async (data: any) => {
                                 cuti_dokter.cuti_user_id = users.user_id
                                 and cuti_dokter.tanggal_awal::date <= '${data.tanggalperiksa}'
                                 and cuti_dokter.tanggal_akhir::date >= '${data.tanggalperiksa}'
+                                and case 
+                                        when bagian.flag_eksekutif = 1 then cuti_dokter.flag_rajal_merial
+                                        else cuti_dokter.flag_rajal_reguler
+                                    end = 1
+                                and cuti_dokter.status_batal is null
                             where
                                 jadwal_dokter.bagian_id = ${data.bagian_id}
                                 and users.user_id = ${data.dokter_id}
