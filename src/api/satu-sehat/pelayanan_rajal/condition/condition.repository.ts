@@ -8,9 +8,25 @@ import {
 } from "./../../../../db/database.handler";
 import { dateNow } from "./../../../../middlewares/time";
 
-const getDataCondition = async (limit: string) => {
-    const getDataPasien = await prismaDb1.$queryRaw`
-        select
+const getDataCondition = async (limit: string, emr_detail_id: string = "") => {
+    let queryEmrDetail;
+    let queryDate;
+    let queryWhereTransaction;
+    if (emr_detail_id) {
+        queryDate = "";
+        queryEmrDetail = `AND emr_detail.emr_detail_id = ${parseInt(
+            emr_detail_id,
+            10
+        )}`;
+
+        queryWhereTransaction =
+            "AND (transaction_satu_sehat_condition.transaction_satu_sehat_id is null or transaction_satu_sehat_condition.key_satu_sehat = '0')";
+    } else {
+        queryDate = `AND registrasi.tgl_masuk::date = now()::date`;
+        queryEmrDetail = "";
+        queryWhereTransaction = `AND transaction_satu_sehat_condition.transaction_satu_sehat_id is null`;
+    }
+    const getDataPasien = `select
             registrasi.registrasi_id Registration_ID,
             registrasi.tgl_masuk,
             pasien.nama_pasien Patient_Name,
@@ -22,7 +38,8 @@ const getDataCondition = async (limit: string) => {
             emr_detail.input_time input_time_emr,
             emr_detail.value,
             icd.kode_diagnosa,
-            icd.nama_diagnosa
+            icd.nama_diagnosa,
+            transaction_satu_sehat_condition.transaction_satu_sehat_id
         from
             registrasi
         inner join registrasi_detail on
@@ -58,14 +75,18 @@ const getDataCondition = async (limit: string) => {
             registrasi.status_batal is null
             and registrasi.tgl_masuk::date = now()::date
             and transaction_satu_sehat.key_satu_sehat is not null
-            and transaction_satu_sehat_condition.transaction_satu_sehat_id is null
+            ${queryEmrDetail}
+            ${queryDate}
+            ${queryWhereTransaction}
         limit ${parseInt(limit, 10)};
     `;
-    return getDataPasien;
+    const getDataPasienNew = await prismaDb1.$queryRawUnsafe(getDataPasien);
+
+    return getDataPasienNew;
 };
 
 const updateInsertIdConditionRepo = async (
-    registrasi_id: number,
+    emr_detail_id: bigint,
     payload: any,
     response: any,
     id: string,
@@ -81,7 +102,7 @@ const updateInsertIdConditionRepo = async (
         input_time: dateNow(),
         input_user_id: 1,
         payload: payload,
-        key_simrs: registrasi_id,
+        key_simrs: emr_detail_id,
         key_satu_sehat: id,
         transaction_type: type,
         response: response,
@@ -94,4 +115,43 @@ const updateInsertIdConditionRepo = async (
     });
 };
 
-export { getDataCondition, updateInsertIdConditionRepo };
+const updateUpdateIdConditionRepo = async (
+    emr_detail_id: bigint,
+    payload: any,
+    response: any,
+    id: string,
+    type: string,
+    gagal: number | null = null,
+    transaction_satu_sehat_id: number | null = null
+) => {
+    let data: any = {
+        mod_time: dateNow(),
+        mod_user_id: 1,
+        payload: payload,
+        key_simrs: emr_detail_id,
+        key_satu_sehat: id,
+        transaction_type: type,
+        response: response,
+    };
+    if (gagal === 1) {
+        data.status = 1;
+    }
+    if (transaction_satu_sehat_id) {
+        data.transaction_satu_sehat_id = transaction_satu_sehat_id;
+    }
+    const updateRujukan = await prismaDb1.transaction_satu_sehat.update({
+        where: {
+            transaction_satu_sehat_id: parseInt(
+                data.transaction_satu_sehat_id,
+                10
+            ),
+        },
+        data,
+    });
+};
+
+export {
+    getDataCondition,
+    updateInsertIdConditionRepo,
+    updateUpdateIdConditionRepo,
+};
