@@ -22,7 +22,7 @@ const getDataCondition = async (limit: string, emr_detail_id: string = "") => {
         queryWhereTransaction =
             "AND (transaction_satu_sehat_condition.transaction_satu_sehat_id is null or transaction_satu_sehat_condition.key_satu_sehat = '0')";
     } else {
-        queryDate = `AND registrasi.tgl_masuk::date = now()::date`;
+        queryDate = `AND registrasi.tgl_masuk::date BETWEEN (now()::date - interval '30 days') AND now()::date`;
         queryEmrDetail = "";
         queryWhereTransaction = `AND transaction_satu_sehat_condition.transaction_satu_sehat_id is null`;
     }
@@ -32,14 +32,14 @@ const getDataCondition = async (limit: string, emr_detail_id: string = "") => {
             pasien.nama_pasien Patient_Name,
             resources_patient.key_satu_sehat Patient_ID,
             bagian.nama_bagian,
-            transaction_satu_sehat.key_satu_sehat Encounter_ID,
+            tss_encounter.key_satu_sehat Encounter_ID,
             emr_detail.emr_detail_id,
             emr_detail.objek_id,
             emr_detail.input_time input_time_emr,
             emr_detail.value,
             icd.kode_diagnosa,
             icd.nama_diagnosa,
-            transaction_satu_sehat_condition.transaction_satu_sehat_id
+            tss_condition.transaction_satu_sehat_id
         from
             registrasi
         inner join registrasi_detail on
@@ -63,18 +63,17 @@ const getDataCondition = async (limit: string, emr_detail_id: string = "") => {
             and emr_detail.variabel = 'primary'
             and emr_detail.objek_id in (42)
             and emr_detail.status_batal is null
-        inner join transaction_satu_sehat on
-            registrasi.registrasi_id = transaction_satu_sehat.key_simrs
-            and transaction_satu_sehat.transaction_type = 'Encounter'
+        inner join transaction_satu_sehat tss_encounter on
+            registrasi.registrasi_id = tss_encounter.key_simrs
+            and tss_encounter.transaction_type = 'Encounter'
         inner join icd on
             emr_detail.value::int = icd.icd_id
-        left outer join transaction_satu_sehat transaction_satu_sehat_condition on
-            emr_detail.emr_detail_id = transaction_satu_sehat_condition.key_simrs
-            and transaction_satu_sehat_condition.transaction_type = 'Condition' 
+        left outer join transaction_satu_sehat tss_condition on
+            emr_detail.emr_detail_id = tss_condition.key_simrs
+            and tss_condition.transaction_type = 'Condition' 
         where 
             registrasi.status_batal is null
-            and registrasi.tgl_masuk::date = now()::date
-            and transaction_satu_sehat.key_satu_sehat is not null
+            and tss_encounter.key_satu_sehat is not null
             ${queryEmrDetail}
             ${queryDate}
             ${queryWhereTransaction}

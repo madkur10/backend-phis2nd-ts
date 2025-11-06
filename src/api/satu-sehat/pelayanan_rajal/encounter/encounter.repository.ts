@@ -21,7 +21,7 @@ const getDataEncounter = async (limit: string, registrasi_id: string = "") => {
 
         queryWhereTransaction = "AND (transaction_satu_sehat.transaction_satu_sehat_id is null or transaction_satu_sehat.key_satu_sehat = '0')";
     } else {
-        queryDate = `AND registrasi.tgl_masuk::date = now()::date`;
+        queryDate = `AND registrasi.tgl_masuk::date BETWEEN (now()::date - interval '30 days') AND now()::date`;
         queryRegistrasi = "";
         queryWhereTransaction = `AND transaction_satu_sehat.transaction_satu_sehat_id is null`;
     }
