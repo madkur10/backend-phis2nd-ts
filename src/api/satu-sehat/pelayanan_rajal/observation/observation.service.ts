@@ -2,6 +2,7 @@ import { environment } from "../../../../utils/config";
 import { checkTokenService } from "../../generate-token/generate-token.service";
 import {
     getDataObservation,
+    getDataObservationRad,
     updateInsertIdObservationRepo,
     updateUpdateIdObservationRepo,
 } from "./observation.repository";
@@ -166,7 +167,10 @@ const sendObservationRegistrasiService = async (emr_detail_id: string) => {
     }
     let token = tokenService?.data?.access_token;
 
-    const getDataObservationReady: any = await getDataObservation('1', emr_detail_id);
+    const getDataObservationReady: any = await getDataObservation(
+        "1",
+        emr_detail_id
+    );
 
     const resultPush: any = [];
     if (getDataObservationReady.length > 0) {
@@ -266,7 +270,7 @@ const sendObservationRegistrasiService = async (emr_detail_id: string) => {
                 payload
             );
 
-             if (response.status === 201) {
+            if (response.status === 201) {
                 if (element.transaction_satu_sehat_id) {
                     const updateInsertIdPatient = updateUpdateIdObservationRepo(
                         element.emr_detail_id,
@@ -333,4 +337,272 @@ const sendObservationRegistrasiService = async (emr_detail_id: string) => {
     return resultPush;
 };
 
-export { sendObservationService, sendObservationRegistrasiService };
+const sendObservationRadService = async (limit: string) => {
+    const tokenService = await checkTokenService();
+    if (tokenService?.code !== 200) {
+        throw new Error("Generate Token Failed");
+    }
+    let token = tokenService?.data?.access_token;
+
+    const getDataObservationRadReady: any = await getDataObservationRad(limit);
+
+    const resultPush: any = [];
+    if (getDataObservationRadReady.length > 0) {
+        const promises = getDataObservationRadReady.map(
+            async (element: any) => {
+                const headersData = {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                };
+                const url = `${baseUrl}/Observation`;
+                const method = "POST";
+                const tglLayanan = element.tgl_hasil;
+
+                const payload = {
+                    resourceType: "Observation",
+                    identifier: [
+                        {
+                            system: `http://sys-ids.kemkes.go.id/observation/${orgId}`,
+                            value: element.hasil_rad_id.toString(),
+                        },
+                    ],
+                    status: "final",
+                    code: {
+                        coding: [
+                            {
+                                system:
+                                    element.type_terminologi == "SnomedCT"
+                                        ? "http://snomed.info/sct"
+                                        : "http://loinc.org",
+                                code: element.tindakan_satset_id,
+                                display: element.nama_tindakan,
+                            },
+                        ],
+                    },
+                    subject: {
+                        reference: `Patient/${element.patient_id}`,
+                        display: `${element.patient_name}`,
+                    },
+                    encounter: {
+                        reference: `Encounter/${element.encounter_id}`,
+                    },
+                    effectiveDateTime: tglLayanan,
+                    issued: tglLayanan,
+                    performer: [
+                        {
+                            reference: `Practitioner/${element.practitioner_rad_id}`,
+                            display: `${element.name_practitioner_rad}`,
+                        },
+                    ],
+                    valueString:
+                        (element.deskripsi
+                            ? `Deskripsi: ${element.deskripsi}`
+                            : ``) +
+                        (element.kesan ? `Kesan: ${element.kesan}` : ``) +
+                        (element.saran ? `Saran: ${element.saran}` : ``),
+                    basedOn: [
+                        {
+                            reference: `ServiceRequest/${element.service_request_id}`,
+                        },
+                    ],
+                };
+
+                const response: any = await requestAxios(
+                    headersData,
+                    url,
+                    method,
+                    payload
+                );
+
+                if (response.status === 201) {
+                    const updateInsertIdPatient = updateInsertIdObservationRepo(
+                        element.hasil_rad_id,
+                        payload,
+                        response.data,
+                        response.data.id,
+                        response.data.resourceType + "Rad"
+                    );
+                    resultPush.push({
+                        ...element,
+                        status: "sukses",
+                    });
+                } else {
+                    const updateInsertIdPatient = updateInsertIdObservationRepo(
+                        element.hasil_rad_id,
+                        payload,
+                        response.data,
+                        "0",
+                        "ObservationRad",
+                        1
+                    );
+
+                    resultPush.push({
+                        ...element,
+                        status: "gagal",
+                        response: response.data,
+                    });
+                }
+            }
+        );
+        await Promise.all(promises);
+    }
+
+    return resultPush;
+};
+
+const sendObservationRadOrderService = async (hasil_rad_id: string) => {
+    const tokenService = await checkTokenService();
+    if (tokenService?.code !== 200) {
+        throw new Error("Generate Token Failed");
+    }
+    let token = tokenService?.data?.access_token;
+
+    const getDataServiceReady: any = await getDataObservationRad(
+        "1",
+        hasil_rad_id
+    );
+
+    const resultPush: any = [];
+    if (getDataServiceReady.length > 0) {
+        const promises = getDataServiceReady.map(async (element: any) => {
+            const headersData = {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            };
+            const url = `${baseUrl}/Observation`;
+            const method = "POST";
+            const tglLayanan = element.tgl_hasil;
+
+            const payload = {
+                    resourceType: "Observation",
+                    identifier: [
+                        {
+                            system: `http://sys-ids.kemkes.go.id/observation/${orgId}`,
+                            value: element.hasil_rad_id.toString(),
+                        },
+                    ],
+                    status: "final",
+                    code: {
+                        coding: [
+                            {
+                                system:
+                                    element.type_terminologi == "SnomedCT"
+                                        ? "http://snomed.info/sct"
+                                        : "http://loinc.org",
+                                code: element.tindakan_satset_id,
+                                display: element.nama_tindakan,
+                            },
+                        ],
+                    },
+                    subject: {
+                        reference: `Patient/${element.patient_id}`,
+                        display: `${element.patient_name}`,
+                    },
+                    encounter: {
+                        reference: `Encounter/${element.encounter_id}`,
+                    },
+                    effectiveDateTime: tglLayanan,
+                    issued: tglLayanan,
+                    performer: [
+                        {
+                            reference: `Practitioner/${element.practitioner_rad_id}`,
+                            display: `${element.name_practitioner_rad}`,
+                        },
+                    ],
+                    valueString:
+                        (element.deskripsi
+                            ? `Deskripsi: ${element.deskripsi}`
+                            : ``) +
+                        (element.kesan ? `Kesan: ${element.kesan}` : ``) +
+                        (element.saran ? `Saran: ${element.saran}` : ``),
+                    basedOn: [
+                        {
+                            reference: `ServiceRequest/${element.service_request_id}`,
+                        },
+                    ],
+                };
+
+            const response: any = await requestAxios(
+                headersData,
+                url,
+                method,
+                payload
+            );
+
+            if (response.status === 201) {
+                if (element.transaction_satu_sehat_id) {
+                    const updateInsertIdPatient =
+                        updateUpdateIdObservationRepo(
+                            element.hasil_rad_id,
+                            payload,
+                            response.data,
+                            response.data.id,
+                            response.data.resourceType + "Rad",
+                            null,
+                            element.transaction_satu_sehat_id
+                        );
+                    resultPush.push({
+                        ...element,
+                        status: "sukses",
+                    });
+                } else {
+                    const updateInsertIdPatient =
+                        updateInsertIdObservationRepo(
+                            element.hasil_rad_id,
+                            payload,
+                            response.data,
+                            response.data.id,
+                            response.data.resourceType + "Rad",
+                        );
+                    resultPush.push({
+                        ...element,
+                        status: "sukses",
+                    });
+                }
+            } else {
+                if (element.transaction_satu_sehat_id) {
+                    const updateInsertIdPatient =
+                        updateUpdateIdObservationRepo(
+                            element.hasil_rad_id,
+                            payload,
+                            response.data,
+                            "0",
+                            "ObservationRad",
+                            1,
+                            element.transaction_satu_sehat_id
+                        );
+                    resultPush.push({
+                        ...element,
+                        status: "sukses",
+                    });
+                } else {
+                    const updateInsertIdPatient =
+                        updateInsertIdObservationRepo(
+                            element.hasil_rad_id,
+                            payload,
+                            response.data,
+                            "0",
+                            "ObservationRad",
+                            1
+                        );
+
+                    resultPush.push({
+                        ...element,
+                        status: "gagal",
+                        response: response.data,
+                    });
+                }
+            }
+        });
+        await Promise.all(promises);
+    }
+
+    return resultPush;
+};
+
+export {
+    sendObservationService,
+    sendObservationRegistrasiService,
+    sendObservationRadService,
+    sendObservationRadOrderService,
+};

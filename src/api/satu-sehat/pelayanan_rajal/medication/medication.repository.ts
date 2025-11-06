@@ -53,7 +53,7 @@ const getDataMedicationCreate = async (limit: string) => {
             and transaction_medication.transaction_type = 'Medication'
         where 
             registrasi.status_batal is null
-            and registrasi.tgl_masuk::date = now()::date
+            AND registrasi.tgl_masuk::date BETWEEN (now()::date - interval '30 days') AND now()::date
             and transaction_encounter.key_satu_sehat is not null
             and transaction_medication.transaction_satu_sehat_id is null
         order by registrasi.registrasi_id asc
@@ -131,7 +131,7 @@ const getDataMedicationCreateRequestRepo = async (limit: string) => {
         and transaction_satu_sehat_medication_request.transaction_type = 'MedicationRequest'
     where
         peresepan_obat_detail.status_batal is null
-        and registrasi.tgl_masuk::date = now()::date
+        AND registrasi.tgl_masuk::date BETWEEN (now()::date - interval '30 days') AND now()::date
         and transaction_satu_sehat_medication_request.transaction_satu_sehat_id is null
     order by
 	    registrasi.registrasi_id asc
@@ -195,7 +195,7 @@ const getDataMedicationCreateDispenseRepo = async (limit: string) => {
         and transaction_satu_sehat_medication_create_dispense.transaction_type = 'MedicationCreateDispense'
     where
         registrasi.status_batal is null
-        and registrasi.tgl_masuk::date = now()::date
+        AND registrasi.tgl_masuk::date BETWEEN (now()::date - interval '30 days') AND now()::date
         and transaction_encounter.key_satu_sehat is not null
         and transaction_satu_sehat_medication_create_dispense.transaction_satu_sehat_id is null
     order by
@@ -303,7 +303,7 @@ const getDataMedicationDispenseRepo = async (limit: string) => {
         and transaction_satu_sehat_medication_dispense.transaction_type = 'MedicationDispense'
     where
         peresepan_obat_detail.status_batal is null
-        and registrasi.tgl_masuk::date = now()::date
+        AND registrasi.tgl_masuk::date BETWEEN (now()::date - interval '30 days') AND now()::date
         and transaction_satu_sehat_medication_dispense.transaction_satu_sehat_id is null
     order by
 	    registrasi.registrasi_id asc

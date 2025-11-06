@@ -8,99 +8,7 @@ import {
 } from "./../../../../db/database.handler";
 import { dateNow } from "./../../../../middlewares/time";
 
-const getDataObservation = async (
-    limit: string,
-    emr_detail_id: string = ""
-) => {
-    let queryEmrDetail;
-    let queryDate;
-    let queryWhereTransaction;
-    if (emr_detail_id) {
-        queryDate = "";
-        queryEmrDetail = `AND emr_detail.emr_detail_id = ${parseInt(
-            emr_detail_id,
-            10
-        )}`;
-
-        queryWhereTransaction =
-            "AND (transaction_satu_sehat_observation.transaction_satu_sehat_id is null or transaction_satu_sehat_observation.key_satu_sehat = '0')";
-    } else {
-        queryDate = `AND registrasi.tgl_masuk::date = now()::date`;
-        queryEmrDetail = "";
-        queryWhereTransaction = `AND transaction_satu_sehat_observation.transaction_satu_sehat_id is null`;
-    }
-
-    const getDataPasien = `
-        select
-            distinct
-            registrasi.registrasi_id Registration_ID,
-            registrasi.tgl_masuk,
-            pasien.nama_pasien Patient_Name,
-            resources_patient.key_satu_sehat Patient_ID,
-            resources_practitioner.key_satu_sehat Practitioner_ID,
-            pegawai.nama_pegawai Practitioner_Name,
-            resources_location.key_satu_sehat Location_Poli_id,
-            bagian.nama_bagian,
-            transaction_satu_sehat.key_satu_sehat Encounter_ID,
-            emr_detail.emr_detail_id,
-            emr_detail.objek_id,
-            emr_detail.input_time input_time_emr,
-            emr_detail.value,
-            transaction_satu_sehat_observation.transaction_satu_sehat_id
-        from
-            registrasi
-        inner join registrasi_detail on
-            registrasi.registrasi_id = registrasi_detail.registrasi_id
-            and registrasi_detail.status_batal is null
-        inner join registrasi_urut on
-            registrasi_detail.registrasi_detail_id = registrasi_urut.registrasi_detail_id
-            and registrasi_urut.status_batal is null
-        inner join bagian on
-            registrasi_detail.bagian_id = bagian.bagian_id
-            and bagian.referensi_bagian in (1, 313)
-        inner join pegawai on
-            registrasi_urut.pegawai_id = pegawai.pegawai_id
-        inner join pasien on
-            registrasi.pasien_id = pasien.pasien_id
-        inner join resources resources_patient on
-            pasien.pasien_id = resources_patient.key_simrs
-            and resources_patient.resources_type = 'Patient'
-            and resources_patient.key_satu_sehat <> '0'
-        inner join resources resources_practitioner on
-            pegawai.pegawai_id = resources_practitioner.key_simrs
-            and resources_practitioner.resources_type = 'Practitioner'
-        inner join resources resources_location on
-            bagian.bagian_id = resources_location.key_simrs
-            and resources_location.resources_type = 'Location'
-        inner join emr on
-            registrasi.registrasi_id = emr.registrasi_id
-            and emr.status_batal is null
-            and emr.form_id in (6, 36)
-        inner join emr_detail on
-            emr.emr_id = emr_detail.emr_id
-            and emr_detail.objek_id in (6, 7, 13, 12, 14)
-            and emr_detail.status_batal is null
-        inner join transaction_satu_sehat on
-            registrasi.registrasi_id = transaction_satu_sehat.key_simrs
-            and transaction_satu_sehat.transaction_type = 'Encounter'
-        left outer join transaction_satu_sehat transaction_satu_sehat_observation on
-            emr_detail.emr_detail_id = transaction_satu_sehat_observation.key_simrs
-            and transaction_satu_sehat_observation.transaction_type = 'Observation'
-        where 
-            registrasi.status_batal is null
-            and transaction_satu_sehat.key_satu_sehat is not null
-            and transaction_satu_sehat.key_satu_sehat <> '0'
-            ${queryEmrDetail}
-            ${queryDate}
-            ${queryWhereTransaction}
-        limit ${parseInt(limit, 10)};
-    `;
-    const getDataPasienNew = await prismaDb1.$queryRawUnsafe(getDataPasien);
-
-    return getDataPasienNew;
-};
-
-const getDataObservationRad = async (
+const getDataDiagnosticReport = async (
     limit: string,
     hasil_rad_id: string = ""
 ) => {
@@ -114,11 +22,11 @@ const getDataObservationRad = async (
             10
         )}`;
         queryWhereTransaction =
-            "AND (tss_observation_rad.transaction_satu_sehat_id is null or tss_observation_rad.key_satu_sehat = '0')";
+            "AND (tss_diagnostic_report.transaction_satu_sehat_id is null or tss_diagnostic_report.key_satu_sehat = '0')";
     } else {
         queryDate = `AND registrasi.tgl_masuk::date BETWEEN (now()::date - interval '30 days') AND now()::date`;
         queryHasilRad = "";
-        queryWhereTransaction = `AND tss_observation_rad.transaction_satu_sehat_id is null`;
+        queryWhereTransaction = `AND tss_diagnostic_report.transaction_satu_sehat_id is null`;
     }
     const getDataPasien = `select
         registrasi.registrasi_id,
@@ -140,7 +48,8 @@ const getDataObservationRad = async (
         hasil_rad_detail.deskripsi,
         hasil_rad_detail.kesan,
         hasil_rad_detail.saran,
-        tss_observation_rad.transaction_satu_sehat_id
+        tss_observation_rad.key_satu_sehat Observation_Rad_ID,
+        tss_diagnostic_report.transaction_satu_sehat_id
     from
         order_rad
     inner join order_rad_detail on
@@ -184,23 +93,28 @@ const getDataObservationRad = async (
         hasil_rad.hasil_rad_id = tss_rad.key_simrs
         and tss_rad.transaction_type = 'ServiceRequest'
         and tss_rad.key_satu_sehat <> '0'
-    left join transaction_satu_sehat tss_observation_rad on
+    inner join transaction_satu_sehat tss_observation_rad on
         hasil_rad.hasil_rad_id = tss_observation_rad.key_simrs 
         and tss_observation_rad.transaction_type = 'ObservationRad'
+        and tss_observation_rad.key_satu_sehat <> '0'
+    left join transaction_satu_sehat tss_diagnostic_report on
+        hasil_rad.hasil_rad_id = tss_diagnostic_report.key_simrs 
+        and tss_diagnostic_report.transaction_type = 'DiagnosticReport'
         ${queryWhereTransaction}
     where
         registrasi.status_batal is null
-        ${queryDate}
+        and tss_diagnostic_report.transaction_satu_sehat_id is null
         ${queryHasilRad}
-        limit ${parseInt(limit, 10)};
+        ${queryDate}
+    limit ${parseInt(limit, 10)};
     `;
     const getDataPasienNew = await prismaDb1.$queryRawUnsafe(getDataPasien);
 
     return getDataPasienNew;
 };
 
-const updateInsertIdObservationRepo = async (
-    emr_detail_id: bigint,
+const updateInsertIdDiagnosticReportRepo = async (
+    hasil_rad_id: bigint,
     payload: any,
     response: any,
     id: string,
@@ -216,7 +130,7 @@ const updateInsertIdObservationRepo = async (
         input_time: dateNow(),
         input_user_id: 1,
         payload: payload,
-        key_simrs: emr_detail_id,
+        key_simrs: hasil_rad_id,
         key_satu_sehat: id,
         transaction_type: type,
         response: response,
@@ -229,8 +143,8 @@ const updateInsertIdObservationRepo = async (
     });
 };
 
-const updateUpdateIdObservationRepo = async (
-    registrasi_id: number,
+const updateUpdateIdDiagnosticReportRepo = async (
+    hasil_rad_id: bigint,
     payload: any,
     response: any,
     id: string,
@@ -242,7 +156,7 @@ const updateUpdateIdObservationRepo = async (
         mod_time: dateNow(),
         mod_user_id: 1,
         payload: payload,
-        key_simrs: registrasi_id,
+        key_simrs: hasil_rad_id,
         key_satu_sehat: id,
         transaction_type: type,
         response: response,
@@ -265,8 +179,7 @@ const updateUpdateIdObservationRepo = async (
 };
 
 export {
-    getDataObservation,
-    getDataObservationRad,
-    updateInsertIdObservationRepo,
-    updateUpdateIdObservationRepo,
+    getDataDiagnosticReport,
+    updateInsertIdDiagnosticReportRepo,
+    updateUpdateIdDiagnosticReportRepo,
 };
