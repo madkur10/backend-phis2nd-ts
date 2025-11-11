@@ -181,17 +181,17 @@ const getDataObservationRad = async (
         tindakan.tindakan_id = r_tindakan.key_simrs 
         and r_tindakan.resources_type in ('SnomedCT', 'LOINC')
     inner join transaction_satu_sehat tss_rad on
-        hasil_rad.hasil_rad_id = tss_rad.key_simrs
+        hasil_rad_detail.hasil_rad_detail_id = tss_rad.key_simrs
         and tss_rad.transaction_type = 'ServiceRequest'
         and tss_rad.key_satu_sehat <> '0'
     left join transaction_satu_sehat tss_observation_rad on
-        hasil_rad.hasil_rad_id = tss_observation_rad.key_simrs 
+        hasil_rad_detail.hasil_rad_detail_id = tss_observation_rad.key_simrs 
         and tss_observation_rad.transaction_type = 'ObservationRad'
-        ${queryWhereTransaction}
     where
         registrasi.status_batal is null
         ${queryDate}
         ${queryHasilRad}
+        ${queryWhereTransaction}
         limit ${parseInt(limit, 10)};
     `;
     const getDataPasienNew = await prismaDb1.$queryRawUnsafe(getDataPasien);
