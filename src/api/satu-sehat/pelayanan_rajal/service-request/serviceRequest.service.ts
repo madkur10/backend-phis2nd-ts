@@ -43,7 +43,7 @@ const sendServRequestRadService = async (limit: string) => {
                     identifier: [
                         {
                             system: `http://sys-ids.kemkes.go.id/servicerequest/${orgId}`,
-                            value: element.hasil_rad_id.toString(),
+                            value: element.hasil_rad_detail_id.toString(),
                         },
                         {
                             use: "usual",
@@ -103,7 +103,7 @@ const sendServRequestRadService = async (limit: string) => {
                 if (response.status === 201) {
                     const updateInsertIdPatient =
                         updateInsertIdServiceRequestRepo(
-                            element.hasil_rad_id,
+                            element.hasil_rad_detail_id,
                             payload,
                             response.data,
                             response.data.id,
@@ -116,7 +116,7 @@ const sendServRequestRadService = async (limit: string) => {
                 } else {
                     const updateInsertIdPatient =
                         updateInsertIdServiceRequestRepo(
-                            element.hasil_rad_id,
+                            element.hasil_rad_detail_id,
                             payload,
                             response.data,
                             "0",
@@ -138,7 +138,7 @@ const sendServRequestRadService = async (limit: string) => {
     return resultPush;
 };
 
-const sendServRequestOrderRadService = async (hasil_rad_id: string) => {
+const sendServRequestOrderRadService = async (hasil_rad_detail_id: string) => {
     const tokenService = await checkTokenService();
     if (tokenService?.code !== 200) {
         throw new Error("Generate Token Failed");
@@ -147,7 +147,7 @@ const sendServRequestOrderRadService = async (hasil_rad_id: string) => {
 
     const getDataServiceReady: any = await getDataServiceRequest(
         "1",
-        hasil_rad_id
+        hasil_rad_detail_id
     );
 
     const resultPush: any = [];
@@ -166,7 +166,7 @@ const sendServRequestOrderRadService = async (hasil_rad_id: string) => {
                 identifier: [
                     {
                         system: `http://sys-ids.kemkes.go.id/servicerequest/${orgId}`,
-                        value: element.hasil_rad_id.toString(),
+                        value: element.hasil_rad_detail_id.toString(),
                     },
                     {
                         use: "usual",
@@ -227,7 +227,7 @@ const sendServRequestOrderRadService = async (hasil_rad_id: string) => {
                 if (element.transaction_satu_sehat_id) {
                     const updateInsertIdPatient =
                         updateUpdateIdServiceRequestRepo(
-                            element.hasil_rad_id,
+                            element.hasil_rad_detail_id,
                             payload,
                             response.data,
                             response.data.id,
@@ -242,7 +242,7 @@ const sendServRequestOrderRadService = async (hasil_rad_id: string) => {
                 } else {
                     const updateInsertIdPatient =
                         updateInsertIdServiceRequestRepo(
-                            element.hasil_rad_id,
+                            element.hasil_rad_detail_id,
                             payload,
                             response.data,
                             response.data.id,
@@ -257,7 +257,7 @@ const sendServRequestOrderRadService = async (hasil_rad_id: string) => {
                 if (element.transaction_satu_sehat_id) {
                     const updateInsertIdPatient =
                         updateUpdateIdServiceRequestRepo(
-                            element.hasil_rad_id,
+                            element.hasil_rad_detail_id,
                             payload,
                             response.data,
                             "0",
@@ -272,7 +272,7 @@ const sendServRequestOrderRadService = async (hasil_rad_id: string) => {
                 } else {
                     const updateInsertIdPatient =
                         updateInsertIdServiceRequestRepo(
-                            element.hasil_rad_id,
+                            element.hasil_rad_detail_id,
                             payload,
                             response.data,
                             "0",
