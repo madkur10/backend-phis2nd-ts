@@ -110,7 +110,7 @@ const getDataObservationRad = async (
     if (hasil_rad_detail_id) {
         queryDate = "";
         queryHasilRad = `AND hasil_rad_detail.hasil_rad_detail_id = ${parseInt(
-            hasil_rad_id,
+            hasil_rad_detail_id,
             10
         )}`;
         queryWhereTransaction =
