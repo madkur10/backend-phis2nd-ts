@@ -12,7 +12,7 @@ const getDataServiceRequest = async (limit: string, hasil_rad_detail_id: string 
     let queryHasilRad;
     let queryDate;
     let queryWhereTransaction;
-    if (hasil_rad_id) {
+    if (hasil_rad_detail_id) {
         queryDate = "";
         queryHasilRad = `AND hasil_rad_detail.hasil_rad_detail_id = ${parseInt(
             hasil_rad_detail_id,
