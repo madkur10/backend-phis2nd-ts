@@ -150,7 +150,7 @@ const sendDiagnosticReportService = async (limit: string) => {
     return resultPush;
 };
 
-const sendDiagnosticReportOrderRadService = async (hasil_rad_id: string) => {
+const sendDiagnosticReportOrderRadService = async (hasil_rad_detail_id: string) => {
     const tokenService = await checkTokenService();
     if (tokenService?.code !== 200) {
         throw new Error("Generate Token Failed");
@@ -159,7 +159,7 @@ const sendDiagnosticReportOrderRadService = async (hasil_rad_id: string) => {
 
     const getDataServiceReady: any = await getDataDiagnosticReport(
         "1",
-        hasil_rad_id
+        hasil_rad_detail_id
     );
 
     const resultPush: any = [];
@@ -179,7 +179,7 @@ const sendDiagnosticReportOrderRadService = async (hasil_rad_id: string) => {
                     {
                         system: `http://sys-ids.kemkes.go.id/diagnostic/${orgId}/rad`,
                         use: "official",
-                        value: element.hasil_rad_id.toString(),
+                        value: element.hasil_rad_detail_id.toString(),
                     },
                 ],
                 status: "final",
@@ -249,7 +249,7 @@ const sendDiagnosticReportOrderRadService = async (hasil_rad_id: string) => {
                 if (element.transaction_satu_sehat_id) {
                     const updateInsertIdPatient =
                         updateUpdateIdDiagnosticReportRepo(
-                            element.hasil_rad_id,
+                            element.hasil_rad_detail_id,
                             payload,
                             response.data,
                             response.data.id,
@@ -264,7 +264,7 @@ const sendDiagnosticReportOrderRadService = async (hasil_rad_id: string) => {
                 } else {
                     const updateInsertIdPatient =
                         updateInsertIdDiagnosticReportRepo(
-                            element.hasil_rad_id,
+                            element.hasil_rad_detail_id,
                             payload,
                             response.data,
                             response.data.id,
@@ -279,7 +279,7 @@ const sendDiagnosticReportOrderRadService = async (hasil_rad_id: string) => {
                 if (element.transaction_satu_sehat_id) {
                     const updateInsertIdPatient =
                         updateUpdateIdDiagnosticReportRepo(
-                            element.hasil_rad_id,
+                            element.hasil_rad_detail_id,
                             payload,
                             response.data,
                             "0",
@@ -294,7 +294,7 @@ const sendDiagnosticReportOrderRadService = async (hasil_rad_id: string) => {
                 } else {
                     const updateInsertIdPatient =
                         updateInsertIdDiagnosticReportRepo(
-                            element.hasil_rad_id,
+                            element.hasil_rad_detail_id,
                             payload,
                             response.data,
                             "0",
