@@ -8,14 +8,14 @@ import {
 } from "./../../../../db/database.handler";
 import { dateNow } from "./../../../../middlewares/time";
 
-const getDataServiceRequest = async (limit: string, hasil_rad_id: string = "") => {
+const getDataServiceRequest = async (limit: string, hasil_rad_detail_id: string = "") => {
     let queryHasilRad;
     let queryDate;
     let queryWhereTransaction;
     if (hasil_rad_id) {
         queryDate = "";
-        queryHasilRad = `AND hasil_rad.hasil_rad_id = ${parseInt(
-            hasil_rad_id,
+        queryHasilRad = `AND hasil_rad_detail.hasil_rad_detail_id = ${parseInt(
+            hasil_rad_detail_id,
             10
         )}`;
         queryWhereTransaction =
@@ -82,7 +82,7 @@ const getDataServiceRequest = async (limit: string, hasil_rad_id: string = "") =
         tindakan.tindakan_id = r_tindakan.key_simrs 
         and r_tindakan.resources_type in ('SnomedCT', 'LOINC')
     left outer join transaction_satu_sehat tss_rad on
-        hasil_rad.hasil_rad_id = tss_rad.key_simrs
+        hasil_rad_detail.hasil_rad_detail_id = tss_rad.key_simrs
         and tss_rad.transaction_type = 'ServiceRequest'
     where
         registrasi.status_batal is null
@@ -97,7 +97,7 @@ const getDataServiceRequest = async (limit: string, hasil_rad_id: string = "") =
 };
 
 const updateInsertIdServiceRequestRepo = async (
-    hasil_rad_id: bigint,
+    hasil_rad_detail_id: bigint,
     payload: any,
     response: any,
     id: string,
@@ -113,7 +113,7 @@ const updateInsertIdServiceRequestRepo = async (
         input_time: dateNow(),
         input_user_id: 1,
         payload: payload,
-        key_simrs: hasil_rad_id,
+        key_simrs: hasil_rad_detail_id,
         key_satu_sehat: id,
         transaction_type: type,
         response: response,
@@ -127,7 +127,7 @@ const updateInsertIdServiceRequestRepo = async (
 };
 
 const updateUpdateIdServiceRequestRepo = async (
-    hasil_rad_id: bigint,
+    hasil_rad_detail_id: bigint,
     payload: any,
     response: any,
     id: string,
@@ -139,7 +139,7 @@ const updateUpdateIdServiceRequestRepo = async (
         mod_time: dateNow(),
         mod_user_id: 1,
         payload: payload,
-        key_simrs: hasil_rad_id,
+        key_simrs: hasil_rad_detail_id,
         key_satu_sehat: id,
         transaction_type: type,
         response: response,
