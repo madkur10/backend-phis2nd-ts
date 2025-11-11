@@ -10,15 +10,15 @@ import { dateNow } from "./../../../../middlewares/time";
 
 const getDataDiagnosticReport = async (
     limit: string,
-    hasil_rad_id: string = ""
+    hasil_rad_detail_id: string = ""
 ) => {
     let queryHasilRad;
     let queryDate;
     let queryWhereTransaction;
-    if (hasil_rad_id) {
+    if (hasil_rad_detail_id) {
         queryDate = "";
-        queryHasilRad = `AND hasil_rad.hasil_rad_id = ${parseInt(
-            hasil_rad_id,
+        queryHasilRad = `AND hasil_rad_detail.hasil_rad_detail_id = ${parseInt(
+            hasil_rad_detail_id,
             10
         )}`;
         queryWhereTransaction =
@@ -39,6 +39,7 @@ const getDataDiagnosticReport = async (
         hasil_rad.hasil_rad_id,
         hasil_rad.tgl_hasil,
         hasil_rad_detail.tindakan_id,
+        hasil_rad_detail.hasil_rad_detail_id,
         r_tindakan.key_satu_sehat Tindakan_Satset_ID,
         r_tindakan.resources_type type_terminologi,
         user_rad.nama_pegawai Name_Practitioner_Rad,
@@ -90,20 +91,20 @@ const getDataDiagnosticReport = async (
         tindakan.tindakan_id = r_tindakan.key_simrs 
         and r_tindakan.resources_type in ('SnomedCT', 'LOINC')
     inner join transaction_satu_sehat tss_rad on
-        hasil_rad.hasil_rad_id = tss_rad.key_simrs
+        hasil_rad_detail.hasil_rad_detail_id = tss_rad.key_simrs
         and tss_rad.transaction_type = 'ServiceRequest'
         and tss_rad.key_satu_sehat <> '0'
     inner join transaction_satu_sehat tss_observation_rad on
-        hasil_rad.hasil_rad_id = tss_observation_rad.key_simrs 
+        hasil_rad_detail.hasil_rad_detail_id = tss_observation_rad.key_simrs 
         and tss_observation_rad.transaction_type = 'ObservationRad'
         and tss_observation_rad.key_satu_sehat <> '0'
     left join transaction_satu_sehat tss_diagnostic_report on
-        hasil_rad.hasil_rad_id = tss_diagnostic_report.key_simrs 
+        hasil_rad_detail.hasil_rad_detail_id = tss_diagnostic_report.key_simrs 
         and tss_diagnostic_report.transaction_type = 'DiagnosticReport'
-        ${queryWhereTransaction}
     where
         registrasi.status_batal is null
         and tss_diagnostic_report.transaction_satu_sehat_id is null
+        ${queryWhereTransaction}
         ${queryHasilRad}
         ${queryDate}
     limit ${parseInt(limit, 10)};
@@ -114,7 +115,7 @@ const getDataDiagnosticReport = async (
 };
 
 const updateInsertIdDiagnosticReportRepo = async (
-    hasil_rad_id: bigint,
+    hasil_rad_detail_id: bigint,
     payload: any,
     response: any,
     id: string,
@@ -130,7 +131,7 @@ const updateInsertIdDiagnosticReportRepo = async (
         input_time: dateNow(),
         input_user_id: 1,
         payload: payload,
-        key_simrs: hasil_rad_id,
+        key_simrs: hasil_rad_detail_id,
         key_satu_sehat: id,
         transaction_type: type,
         response: response,
@@ -144,7 +145,7 @@ const updateInsertIdDiagnosticReportRepo = async (
 };
 
 const updateUpdateIdDiagnosticReportRepo = async (
-    hasil_rad_id: bigint,
+    hasil_rad_detail_id: bigint,
     payload: any,
     response: any,
     id: string,
@@ -156,7 +157,7 @@ const updateUpdateIdDiagnosticReportRepo = async (
         mod_time: dateNow(),
         mod_user_id: 1,
         payload: payload,
-        key_simrs: hasil_rad_id,
+        key_simrs: hasil_rad_detail_id,
         key_satu_sehat: id,
         transaction_type: type,
         response: response,
