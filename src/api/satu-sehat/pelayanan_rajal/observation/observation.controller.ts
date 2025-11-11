@@ -70,11 +70,11 @@ router.get(
 );
 
 router.get(
-    "/send-observation-rad/hasil_rad_id/:hasil_rad_id",
+    "/send-observation-rad/hasil_rad_detail_id/:hasil_rad_detail_id",
     async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const hasil_rad_id: string = req.params.hasil_rad_id;
-            const sendObservation = await sendObservationRadOrderService(hasil_rad_id);
+            const hasil_rad_detail_id: string = req.params.hasil_rad_detail_id;
+            const sendObservation = await sendObservationRadOrderService(hasil_rad_detail_id);
 
             res.status(200).json({
                 metadata: {
