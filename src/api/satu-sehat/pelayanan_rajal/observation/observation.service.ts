@@ -363,7 +363,7 @@ const sendObservationRadService = async (limit: string) => {
                     identifier: [
                         {
                             system: `http://sys-ids.kemkes.go.id/observation/${orgId}`,
-                            value: element.hasil_rad_id.toString(),
+                            value: element.hasil_rad_detail_id.toString(),
                         },
                     ],
                     status: "final",
@@ -428,7 +428,7 @@ const sendObservationRadService = async (limit: string) => {
                     });
                 } else {
                     const updateInsertIdPatient = updateInsertIdObservationRepo(
-                        element.hasil_rad_id,
+                        element.hasil_rad_detail_id,
                         payload,
                         response.data,
                         "0",
@@ -450,7 +450,7 @@ const sendObservationRadService = async (limit: string) => {
     return resultPush;
 };
 
-const sendObservationRadOrderService = async (hasil_rad_id: string) => {
+const sendObservationRadOrderService = async (hasil_rad_detail_id: string) => {
     const tokenService = await checkTokenService();
     if (tokenService?.code !== 200) {
         throw new Error("Generate Token Failed");
@@ -459,7 +459,7 @@ const sendObservationRadOrderService = async (hasil_rad_id: string) => {
 
     const getDataServiceReady: any = await getDataObservationRad(
         "1",
-        hasil_rad_id
+        hasil_rad_detail_id
     );
 
     const resultPush: any = [];
@@ -478,7 +478,7 @@ const sendObservationRadOrderService = async (hasil_rad_id: string) => {
                     identifier: [
                         {
                             system: `http://sys-ids.kemkes.go.id/observation/${orgId}`,
-                            value: element.hasil_rad_id.toString(),
+                            value: element.hasil_rad_detail_id.toString(),
                         },
                     ],
                     status: "final",
@@ -533,7 +533,7 @@ const sendObservationRadOrderService = async (hasil_rad_id: string) => {
                 if (element.transaction_satu_sehat_id) {
                     const updateInsertIdPatient =
                         updateUpdateIdObservationRepo(
-                            element.hasil_rad_id,
+                            element.hasil_rad_detail_id,
                             payload,
                             response.data,
                             response.data.id,
@@ -548,7 +548,7 @@ const sendObservationRadOrderService = async (hasil_rad_id: string) => {
                 } else {
                     const updateInsertIdPatient =
                         updateInsertIdObservationRepo(
-                            element.hasil_rad_id,
+                            element.hasil_rad_detail_id,
                             payload,
                             response.data,
                             response.data.id,
@@ -563,7 +563,7 @@ const sendObservationRadOrderService = async (hasil_rad_id: string) => {
                 if (element.transaction_satu_sehat_id) {
                     const updateInsertIdPatient =
                         updateUpdateIdObservationRepo(
-                            element.hasil_rad_id,
+                            element.hasil_rad_detail_id,
                             payload,
                             response.data,
                             "0",
@@ -578,7 +578,7 @@ const sendObservationRadOrderService = async (hasil_rad_id: string) => {
                 } else {
                     const updateInsertIdPatient =
                         updateInsertIdObservationRepo(
-                            element.hasil_rad_id,
+                            element.hasil_rad_detail_id,
                             payload,
                             response.data,
                             "0",
