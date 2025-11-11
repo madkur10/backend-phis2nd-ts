@@ -102,14 +102,14 @@ const getDataObservation = async (
 
 const getDataObservationRad = async (
     limit: string,
-    hasil_rad_id: string = ""
+    hasil_rad_detail_id: string = ""
 ) => {
     let queryHasilRad;
     let queryDate;
     let queryWhereTransaction;
-    if (hasil_rad_id) {
+    if (hasil_rad_detail_id) {
         queryDate = "";
-        queryHasilRad = `AND hasil_rad.hasil_rad_id = ${parseInt(
+        queryHasilRad = `AND hasil_rad_detail.hasil_rad_detail_id = ${parseInt(
             hasil_rad_id,
             10
         )}`;
@@ -131,6 +131,7 @@ const getDataObservationRad = async (
         hasil_rad.hasil_rad_id,
         hasil_rad.tgl_hasil,
         hasil_rad_detail.tindakan_id,
+        hasil_rad_detail.hasil_rad_detail_id,
         r_tindakan.key_satu_sehat Tindakan_Satset_ID,
         r_tindakan.resources_type type_terminologi,
         user_rad.nama_pegawai Name_Practitioner_Rad,
