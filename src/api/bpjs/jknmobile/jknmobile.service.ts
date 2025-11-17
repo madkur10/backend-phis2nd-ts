@@ -238,23 +238,23 @@ const daftarPerjanjianService = async (data: any) => {
         //kuota
         kuota = parseInt(checkDokterReady[0].kuota, 10);
         jumlah_terdaftar = parseInt(checkDokterReady[0].jumlah_terdaftar, 10);
-        if (kuota > 0) {
-            sisaPasien = kuota - jumlah_terdaftar;
-            if (sisaPasien < 1) {
-                return {
-                    code: 201,
-                    message: "Quota Dokter Tidak Tersedia di SIMRS",
-                };
-            }
-        }
+        // if (kuota > 0) {
+        //     sisaPasien = kuota - jumlah_terdaftar;
+        //     if (sisaPasien < 1) {
+        //         return {
+        //             code: 201,
+        //             message: "Quota Dokter Tidak Tersedia di SIMRS",
+        //         };
+        //     }
+        // }
 
         //cuti
-        if (checkDokterReady[0].tgl_akhir_cuti) {
-            return {
-                code: 201,
-                message: "Dokter Sedang Cuti",
-            };
-        }
+        // if (checkDokterReady[0].tgl_akhir_cuti) {
+        //     return {
+        //         code: 201,
+        //         message: "Dokter Sedang Cuti",
+        //     };
+        // }
     } else {
         return {
             code: 201,

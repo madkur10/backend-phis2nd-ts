@@ -560,6 +560,25 @@ const insertPendaftaranService = async (data: any) => {
         },
     });
 
+    const taskBpjsLogId = await generateMaxDb1("max_task_bpjs_log_idx", "task_bpjs_log_id");
+    const responseTaskBpjs = {
+        metadata: {
+            code: "200",
+            message: "Success via mjkn",
+        }
+    }
+    const insertTaskBpjsLog = await prismaDb1.task_bpjs_log.create({
+        data: {
+            task_bpjs_log_id: taskBpjsLogId,
+            input_time: dateNow(),
+            input_user_id: data.data.input_user_id,
+            registrasi_id: registrasiId,
+            task_id: '0',
+            push_time: dateNow(),
+            response: responseTaskBpjs,
+        },
+    });
+
     if (data.data.jeniskunjungan === 3) {
         const suratKontrolId = await generateMaxDb1(
             "surat_kontrol",
