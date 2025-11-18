@@ -34,6 +34,7 @@ const getDataServiceRequest = async (limit: string, hasil_rad_detail_id: string 
         order_rad.order_rad_id,
         order_rad_detail.order_rad_detail_id,
         hasil_rad.hasil_rad_id,
+        hasil_rad_detail.hasil_rad_detail_id,
         hasil_rad.tgl_hasil,
         hasil_rad_detail.tindakan_id,
         r_tindakan.key_satu_sehat Tindakan_Satset_ID,
