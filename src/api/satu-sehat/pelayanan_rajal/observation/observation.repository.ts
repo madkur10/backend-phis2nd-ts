@@ -116,7 +116,7 @@ const getDataObservationRad = async (
         queryWhereTransaction =
             "AND (tss_observation_rad.transaction_satu_sehat_id is null or tss_observation_rad.key_satu_sehat = '0')";
     } else {
-        queryDate = `AND registrasi.tgl_masuk::date BETWEEN (now()::date - interval '30 days') AND now()::date`;
+        queryDate = `AND registrasi.tgl_masuk::date BETWEEN (now()::date - interval '14 days') AND (now()::date - interval '7 days')`;
         queryHasilRad = "";
         queryWhereTransaction = `AND tss_observation_rad.transaction_satu_sehat_id is null`;
     }
