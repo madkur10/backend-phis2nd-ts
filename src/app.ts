@@ -10,6 +10,7 @@ import { router as apiRouter } from "./api/index";
 import { logger, credentials, errLogger } from "./middlewares";
 import { corsOptions } from "./config/corsOption";
 import cookieParser from "cookie-parser";
+import { sanitizeAndRejectXSS } from "./utils/sanitize";
 
 import {
     panggilAntrianService,
@@ -30,13 +31,14 @@ const io = new Server(server, {
 app.use(credentials);
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(sanitizeAndRejectXSS);
 app.use(cookieParser());
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
 app.use(logger);
 
 (BigInt.prototype as any).toJSON = function () {
-  return this.toString();
+    return this.toString();
 };
 
 // 🔹 CORS manual (opsional kalau corsOptions sudah cukup)
