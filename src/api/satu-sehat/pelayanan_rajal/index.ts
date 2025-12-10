@@ -8,6 +8,7 @@ import { router as serviceRequestController } from "./service-request/serviceReq
 import { router as diagnosticReportController } from "./diagnostic-report/diagnosticReport.controller";
 import { router as clinicalImpressionController } from "./clinical-impression/clinicalImpression.controller";
 import { router as allergyIntoleranceController } from "./allergy-intolerance/allergyIntolerance.controller";
+import { router as procedureController } from "./procedure/procedure.controller";
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use("/serviceRequest", serviceRequestController);
 router.use("/diagnosticReport", diagnosticReportController);
 router.use("/clinicalImpression", clinicalImpressionController);
 router.use("/allergyIntolerance", allergyIntoleranceController);
+router.use("/procedure", procedureController);
 
 export { router };
