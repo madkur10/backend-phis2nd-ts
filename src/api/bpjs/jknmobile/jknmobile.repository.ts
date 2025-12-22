@@ -794,6 +794,18 @@ const checkInData = async (data: any) => {
         },
     });
 
+    const task_bpjs_log_id_max = await generateMaxDb1("max_task_bpjs_log_idx", "task_bpjs_log_id");
+    const taskIdCheckIn = await prismaDb1.task_bpjs_log.create({
+        data: {
+            task_bpjs_log_id: task_bpjs_log_id_max,
+            input_time: dateNow(),
+            input_user_id: data.input_user_id,
+            task_id: '3',
+            registrasi_id: registrasiId,
+            push_time: dateNow(),
+        }
+    });
+
     return checkIn;
 };
 

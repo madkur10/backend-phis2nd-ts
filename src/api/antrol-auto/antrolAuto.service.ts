@@ -31,8 +31,8 @@ const updateTask = async (limit: number, task_id: number, backdate = false, tglA
         task_time.setHours(task_time.getHours() - 7);
         if (task_id == 2) {
             task_time.setMinutes(task_time.getMinutes() + 1);
-        } else if (task_id == 5) {
-            task_time.setMinutes(task_time.getMinutes() + 150);
+        } else if (task_id == 3) {
+            task_time.setMinutes(task_time.getMinutes() + 2);
         }
 
         task_time = Date.parse(task_time) / 1000;
