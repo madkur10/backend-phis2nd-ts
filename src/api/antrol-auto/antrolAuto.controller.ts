@@ -6,6 +6,8 @@ import {
     updateTaskFisio,
     hitUlangAddAntrol,
     updateTaskNol,
+    updateTaskRujukBedaPoli,
+    updateTaskPoliSesuai,
 } from "./antrolAuto.service";
 
 export const router = Router();
@@ -43,6 +45,66 @@ router.get("/update-task/:limit/task/:task_id", async (req: Request, res: Respon
         const limit: number     = parseInt(req.params.limit, 10);
         const task_id: number   = parseInt(req.params.task_id, 10);
         const dataUpdateTaskNow: any = await updateTask(limit, task_id);
+
+        if (dataUpdateTaskNow.length > 0) {
+            res.status(200).json({
+                metadata: {
+                    code: 200,
+                    msg: "Operation completed successfully!",
+                },
+                response: {
+                    dataUpdateTaskNow,
+                },
+            });
+            console.log(dataUpdateTaskNow);
+        } else {
+            res.status(200).json({
+                metadata: {
+                    code: 200,
+                    msg: "Data tidak tersedia!",
+                },
+            });
+        }
+    } catch (error: any) {
+        next(error.message.replace(/\n/g, " "));
+    }
+})
+
+router.get("/update-task-poli_sesuai/:limit/task/:task_id", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const limit: number     = parseInt(req.params.limit, 10);
+        const task_id: number   = parseInt(req.params.task_id, 10);
+        const dataUpdateTaskNow: any = await updateTaskPoliSesuai(limit, task_id);
+
+        if (dataUpdateTaskNow.length > 0) {
+            res.status(200).json({
+                metadata: {
+                    code: 200,
+                    msg: "Operation completed successfully!",
+                },
+                response: {
+                    dataUpdateTaskNow,
+                },
+            });
+            console.log(dataUpdateTaskNow);
+        } else {
+            res.status(200).json({
+                metadata: {
+                    code: 200,
+                    msg: "Data tidak tersedia!",
+                },
+            });
+        }
+    } catch (error: any) {
+        next(error.message.replace(/\n/g, " "));
+    }
+})
+
+router.get("/update-task-rujuk_beda_poli/:limit/task/:task_id", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const limit: number     = parseInt(req.params.limit, 10);
+        const task_id: number   = parseInt(req.params.task_id, 10);
+        const dataUpdateTaskNow: any = await updateTaskRujukBedaPoli(limit, task_id);
 
         if (dataUpdateTaskNow.length > 0) {
             res.status(200).json({
