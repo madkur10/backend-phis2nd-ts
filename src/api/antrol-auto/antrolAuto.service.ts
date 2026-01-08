@@ -2,8 +2,10 @@ import {
     getPasienFisioReadyHitNow,
     listReadyHitTaskBpjs,
     listReadyHitTaskBpjsFisio,
+    listReadyHitTaskBpjsRujukBedaPoli,
     getPasienHitUlangAddAntrol,
     listReadyHitTaskBpjsNol,
+    listReadyHitTaskBpjsPoliSesuai,
     getKodeBagian,
 } from "./antrolAuto.repository";
 import { requestAxios } from "../../utils/axiosClient";
@@ -23,7 +25,7 @@ const updateTask = async (limit: number, task_id: number, backdate = false, tglA
     }
 
     let dataEndResponse: any = [];
-
+    let regNew: any = [];
     for (let i = 0; i < task_bpjs.length; i++) {
         const registrasi_id = task_bpjs[i].registrasi_id;
         let task_time = task_bpjs[i].task_time;
@@ -58,8 +60,116 @@ const updateTask = async (limit: number, task_id: number, backdate = false, tglA
             description: "Update Task Rajal",
         };
         dataEndResponse.push(dataObj);
+
+        if (responseBooking.data.metadata.message == 'TaskId=4 tidak valid / TaskId sebelumnya belum terkirim') {
+            regNew.push(registrasi_id);
+        }
+    }
+    dataEndResponse.regerr = regNew;
+    return dataEndResponse;
+};
+
+const updateTaskPoliSesuai = async (limit: number, task_id: number) => {
+    let task_bpjs: any = "";
+    task_bpjs = await listReadyHitTaskBpjsPoliSesuai(limit, task_id);
+    if (task_bpjs.length < 1) {
+        return false;
     }
 
+    let dataEndResponse: any = [];
+    let regNew: any = [];
+    for (let i = 0; i < task_bpjs.length; i++) {
+        const registrasi_id = task_bpjs[i].registrasi_id;
+        let task_time = task_bpjs[i].task_time;
+        let task_time_current = task_bpjs[i].task_time;
+        task_time.setHours(task_time.getHours() - 7);
+        if (task_id == 2) {
+            task_time.setMinutes(task_time.getMinutes() + 1);
+        } else if (task_id == 3) {
+            task_time.setMinutes(task_time.getMinutes() + 2);
+        }
+
+        task_time = Date.parse(task_time) / 1000;
+
+        const url = `${process.env.urlPHIS}API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/UPDATE/${registrasi_id}-${task_id}-1-${task_time}`;
+        const method = "GET";
+        const headersData = {};
+
+        const responseBooking: any = await requestAxios(
+            headersData,
+            url,
+            method,
+            null
+        );
+
+        const dataObj = {
+            id: registrasi_id,
+            task_time: new Date(
+                task_time_current.setHours(task_time_current.getHours() + 7)
+            ),
+            url: url,
+            response: responseBooking.data.metadata.message,
+            description: "Update Task Rajal",
+        };
+        dataEndResponse.push(dataObj);
+
+        if (responseBooking.data.metadata.message == 'TaskId=4 tidak valid / TaskId sebelumnya belum terkirim') {
+            regNew.push(registrasi_id);
+        }
+    }
+    dataEndResponse.regerr = regNew;
+    return dataEndResponse;
+};
+
+const updateTaskRujukBedaPoli = async (limit: number, task_id: number) => {
+    let task_bpjs: any = "";
+    task_bpjs = await listReadyHitTaskBpjsRujukBedaPoli(limit, task_id);
+    if (task_bpjs.length < 1) {
+        return false;
+    }
+
+    let dataEndResponse: any = [];
+    let regNew: any = [];
+    for (let i = 0; i < task_bpjs.length; i++) {
+        const registrasi_id = task_bpjs[i].registrasi_id;
+        let task_time = task_bpjs[i].task_time;
+        let task_time_current = task_bpjs[i].task_time;
+        task_time.setHours(task_time.getHours() - 7);
+        if (task_id == 2) {
+            task_time.setMinutes(task_time.getMinutes() + 1);
+        } else if (task_id == 3) {
+            task_time.setMinutes(task_time.getMinutes() + 2);
+        }
+
+        task_time = Date.parse(task_time) / 1000;
+
+        const url = `${process.env.urlPHIS}API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/UPDATE/${registrasi_id}-${task_id}-1-${task_time}`;
+        const method = "GET";
+        const headersData = {};
+
+        const responseBooking: any = await requestAxios(
+            headersData,
+            url,
+            method,
+            null
+        );
+
+        const dataObj = {
+            id: registrasi_id,
+            task_time: new Date(
+                task_time_current.setHours(task_time_current.getHours() + 7)
+            ),
+            url: url,
+            response: responseBooking.data.metadata.message,
+            description: "Update Task Rajal",
+        };
+        dataEndResponse.push(dataObj);
+
+        if (responseBooking.data.metadata.message == 'TaskId=4 tidak valid / TaskId sebelumnya belum terkirim') {
+            regNew.push(registrasi_id);
+        }
+    }
+    dataEndResponse.regerr = regNew;
     return dataEndResponse;
 };
 
@@ -366,6 +476,8 @@ function getDateWithOffset(param: number, tanggal: Date) {
 export {
     hitFisioNow,
     updateTask,
+    updateTaskRujukBedaPoli,
+    updateTaskPoliSesuai,
     updateTaskFisio,
     hitUlangAddAntrol,
     updateTaskNol,
