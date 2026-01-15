@@ -16,6 +16,7 @@ import {
     panggilAntrianService,
     updatePanggilanService,
 } from "./api/phis2nd/antrian/antrian.service";
+import { chatFarmasiKasir } from "./api/chat/chat.service";
 
 dotenv.config();
 const app = express();
@@ -88,6 +89,35 @@ app.post(
         }
     }
 );
+
+io.on("connection", async (socket) => {
+    const BAGIAN_ID: string = socket.handshake.query.bagian as string;
+    console.log(`User dari bagian ${BAGIAN_ID} terhubung`);
+
+    socket.join(BAGIAN_ID);
+
+    socket.on("chat message", async (data) => {
+        const chatData = await chatFarmasiKasir(data);
+        if (chatData?.code === 200) {
+            const rooms = [data.bagian_id_tertuju, data.bagian_id_pengirim];
+            data.chat_detail_id = chatData.chat_detail_id;
+            data.nama_pasien = chatData.nama_pasien;
+            data.no_mr = chatData.no_mr;
+            
+            io.to(rooms).emit("chat message", data);
+        } else {
+            io.to(data.bagian_id_pengirim).emit("chat message", {
+                ...data,
+                message: "Gagal mengirim pesan",
+            });
+        }
+    });
+
+    socket.on("disconnect", () => {
+        console.log(`User dari bagian ${BAGIAN_ID} terputus`);
+    });
+});
+
 app.use(notFoundRouter);
 
 // 🔹 error handler
