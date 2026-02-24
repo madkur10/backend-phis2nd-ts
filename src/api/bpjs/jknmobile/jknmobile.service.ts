@@ -113,20 +113,23 @@ const daftarPerjanjianService = async (data: any) => {
         pasien_id
     );
     if (checkPendaftaranTerdaftar.length > 0) {
-        if (checkPendaftaranTerdaftar[0].kode_poli_bpjs === data.kodepoli) {
-            return {
-                code: 201,
-                message: `Anda sudah terdaftar di Poli ini pada tanggal ${checkPendaftaranTerdaftar[0].tgl_masuk}`,
-            };
-        } else if (
-            checkPendaftaranTerdaftar[0].kode_poli_bpjs !== data.kodepoli &&
-            new Date(checkPendaftaranTerdaftar[0].tgl_masuk + " 00:00:00") ===
-                new Date(data.tanggalperiksa + " 00:00:00")
-        ) {
-            return {
-                code: 201,
-                message: `Anda sudah terdaftar di Poli ${checkPendaftaranTerdaftar[0].nama_bagian} pada tanggal ${checkPendaftaranTerdaftar[0].tgl_masuk}`,
-            };
+        for (let i = 0; i < checkPendaftaranTerdaftar.length; i++) {
+            if (checkPendaftaranTerdaftar[i].kode_poli_bpjs === data.kodepoli) {
+                return {
+                    code: 201,
+                    message: `Anda sudah terdaftar di Poli ini pada tanggal ${checkPendaftaranTerdaftar[i].tgl_masuk}`,
+                };
+            }
+
+            if (
+                checkPendaftaranTerdaftar[i].kode_poli_bpjs !== data.kodepoli &&
+                checkPendaftaranTerdaftar[i].tgl_masuk.toISOString() === new Date(dateNow(data.tanggalperiksa)).toISOString()
+            ) {
+                return {
+                    code: 201,
+                    message: `Anda sudah terdaftar di Poli ${checkPendaftaranTerdaftar[i].nama_bagian} pada tanggal ${checkPendaftaranTerdaftar[i].tgl_masuk}`,
+                };
+            }
         }
     }
 
