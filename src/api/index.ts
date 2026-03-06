@@ -9,6 +9,7 @@ import { router as JKNMobileRouter } from "./bpjs/index";
 import { router as phis2ndController } from "./phis2nd/index";
 
 import { router as SatuSehatController } from "./satu-sehat/";
+import { router as itSupportController } from "./it-support/itsupport.controller";
 
 const router = Router();
 
@@ -23,5 +24,6 @@ router.use("/antrol-auto", antrolAutoController);
 router.use("/phis2nd", phis2ndController);
 
 router.use("/satu-sehat", SatuSehatController);
+router.use("/it-support", itSupportController);
 
 export { router };

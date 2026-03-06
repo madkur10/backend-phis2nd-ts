@@ -16,7 +16,9 @@ import {
     panggilAntrianService,
     updatePanggilanService,
 } from "./api/phis2nd/antrian/antrian.service";
+import { insertedTicketService } from "./api/it-support/itsupport.service";
 import { chatFarmasiKasir } from "./api/chat/chat.service";
+import { chatSupportService } from "./api/it-support/itsupport.service";
 
 dotenv.config();
 const app = express();
@@ -25,7 +27,8 @@ const PORT = process.env.PORT || 3000;
 // 🔹 bikin HTTP server utk Express & Socket.IO
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: { origin: "*" }, // biar bisa diakses client lain
+    cors: { origin: "*" },
+    maxHttpBufferSize: 10e6, // biar bisa diakses client lain
 });
 
 // 🔹 middlewares
@@ -87,7 +90,7 @@ app.post(
             console.error(err);
             res.status(500).json({ metadata: { code: 500 }, message: "error" });
         }
-    }
+    },
 );
 
 io.on("connection", async (socket) => {
@@ -103,7 +106,7 @@ io.on("connection", async (socket) => {
             data.chat_detail_id = chatData.chat_detail_id;
             data.nama_pasien = chatData.nama_pasien;
             data.no_mr = chatData.no_mr;
-            
+
             io.to(rooms).emit("chat message", data);
         } else {
             io.to(data.bagian_id_pengirim).emit("chat message", {
@@ -111,6 +114,39 @@ io.on("connection", async (socket) => {
                 message: "Gagal mengirim pesan",
             });
         }
+    });
+
+    socket.on("chat message support", async (data) => {
+        const chatDataSupport = await chatSupportService(data);
+        if (chatDataSupport?.code === 200) {
+            const rooms = [data.bagian_id_tertuju, data.bagian_id_pengirim];
+            io.to(rooms).emit("chat message support", chatDataSupport.data);
+        } else {
+            io.to(data.bagian_id_pengirim).emit("chat message support", {
+                ...data,
+                message: "Gagal mengirim pesan",
+            });
+        }
+    })
+
+    socket.on("new_complaint_ticket", async (payload, callback) => {
+        const insertedTicket = await insertedTicketService(payload);
+        callback(insertedTicket);
+        io.to([payload.department_id, payload.bagian_id_support]).emit(
+            "new_complaint_ticket",
+            insertedTicket,
+        );
+    });
+
+    socket.on("update_complaint_ticket", async (payload, callback) => {
+        callback({
+            metadata: { code: 200, message: "Success Update Ticket Status" },
+            data: payload,
+        });
+        io.to([payload.department_id, payload.bagian_id_support]).emit(
+            "ticket_updated",
+            payload,
+        );
     });
 
     socket.on("disconnect", () => {
