@@ -8,8 +8,8 @@ import { dateNow } from "./../../../middlewares/time";
 import * as dotenv from "dotenv";
 dotenv.config();
 
-const kelas = parseInt((process.env.kelas_ruang3 ?? '') as string, 10);
-const nasabahBpjs = parseInt((process.env.nasabahBPJS ?? '') as string, 10);
+const kelas = parseInt((process.env.kelas_ruang3 ?? "") as string, 10);
+const nasabahBpjs = parseInt((process.env.nasabahBPJS ?? "") as string, 10);
 
 const checkDpjpHfis = async (kodeDpjp: string) => {
     const dpjp_hfis = await prismaDb1.dpjp_hfis.findFirst({
@@ -25,214 +25,217 @@ const checkDpjpHfis = async (kodeDpjp: string) => {
 };
 
 const checkPoliHfis = async (kodePoli: string) => {
-    const checkpoli_hfis = `SELECT
-                                bagian.bagian_id
-                            FROM
-                                bagian
-                            INNER JOIN mapping_poli_bpjs ON
-                                bagian.bagian_id = mapping_poli_bpjs.bagian_id
-                            WHERE
-                                mapping_poli_bpjs.kode_poli_bpjs = '${kodePoli}'
-                                AND bagian.flag_eksekutif IS NULL
-                            Limit 1
-                        `;
-    const poli_hfis = await prismaDb1.$queryRawUnsafe(checkpoli_hfis);
+    const poli_hfis = await prismaDb1.$queryRaw<{ bagian_id: number }[]>`
+        SELECT
+            bagian.bagian_id
+        FROM
+            bagian
+        INNER JOIN mapping_poli_bpjs ON
+            bagian.bagian_id = mapping_poli_bpjs.bagian_id
+        WHERE
+            mapping_poli_bpjs.kode_poli_bpjs = ${kodePoli}
+            AND bagian.flag_eksekutif IS NULL
+        LIMIT 1
+    `;
 
     return poli_hfis;
 };
 
 const statusAntrean = async (data: any) => {
-    let referensi_bagian_id_rajal = 1;
-    let kode_poli_bpjs = data.kodepoli;
-    let dpjp_hfis_kode = data.kodedokter;
-    let tgl_periksa = data.tanggalperiksa;
-    let jam_praktek = data.jampraktek;
-    let hari = new Date(tgl_periksa).getDay();
+    const referensi_bagian_id_rajal = 1;
+    const kode_poli_bpjs = data.kodepoli;
+    const dpjp_hfis_kode = data.kodedokter;
+    const tgl_periksa = data.tanggalperiksa;
+    const jam_praktek = data.jampraktek;
+    const hari = new Date(tgl_periksa).getDay();
 
-    const rawQuery = `SELECT
-        bagian.nama_bagian,
-        registrasi.registrasi_id,
-        users.nama_pegawai,
-        users.user_id,
-        dpjp_hfis.dpjp_hfis_nama,
-        jadwal_dokter.kuota,
-        jadwal_dokter.hari,
-        registrasi_urut.pegawai_id,
-        emr.emr_id,
-        registrasi_urut.urutan
-    from
-        registrasi
-    inner join registrasi_detail on
-        registrasi.registrasi_id = registrasi_detail.registrasi_id
-        and registrasi_detail.status_batal is NULL
-    inner join registrasi_urut on
-        registrasi_detail.registrasi_detail_id = registrasi_urut.registrasi_detail_id
-        and registrasi_urut.status_batal is NULL
-    inner join bagian on
-        registrasi_detail.bagian_id = bagian.bagian_id
-        and bagian.referensi_bagian = ${referensi_bagian_id_rajal}
-    inner join mapping_poli_bpjs on
-        bagian.bagian_id = mapping_poli_bpjs.bagian_id
-        and mapping_poli_bpjs.kode_poli_bpjs = '${kode_poli_bpjs}'
-        and mapping_poli_bpjs.status_batal is NULL
-    inner join penanggung_rawat on
-        registrasi.registrasi_id = penanggung_rawat.registrasi_id
-    inner join users on
-        penanggung_rawat.rawat_user_id = users.user_id
-    inner join dpjp_hfis on
-        users.user_id = dpjp_hfis.user_id
-        and dpjp_hfis.dpjp_hfis_kode = '${dpjp_hfis_kode.toString()}'
-        and dpjp_hfis.status_batal is NULL
-    inner join jadwal_dokter on
-        bagian.bagian_id = jadwal_dokter.bagian_id
-        and registrasi_urut.pegawai_id = jadwal_dokter.pegawai_id
-        and jadwal_dokter.hari = ${hari}
-    left outer join emr on
-        registrasi.registrasi_id = emr.registrasi_id
-        and emr.form_id = 3
-    where
-        registrasi.status_batal is null
-        and registrasi.tgl_masuk::date = '${tgl_periksa}'`;
-    const status_antrean = await prismaDb1.$queryRawUnsafe(rawQuery);
+    const status_antrean = await prismaDb1.$queryRaw<any[]>`
+        SELECT
+            bagian.nama_bagian,
+            registrasi.registrasi_id,
+            users.nama_pegawai,
+            users.user_id,
+            dpjp_hfis.dpjp_hfis_nama,
+            jadwal_dokter.kuota,
+            jadwal_dokter.hari,
+            registrasi_urut.pegawai_id,
+            emr.emr_id,
+            registrasi_urut.urutan
+        FROM registrasi
+        INNER JOIN registrasi_detail ON
+            registrasi.registrasi_id = registrasi_detail.registrasi_id
+            AND registrasi_detail.status_batal IS NULL
+        INNER JOIN registrasi_urut ON
+            registrasi_detail.registrasi_detail_id = registrasi_urut.registrasi_detail_id
+            AND registrasi_urut.status_batal IS NULL
+        INNER JOIN bagian ON
+            registrasi_detail.bagian_id = bagian.bagian_id
+            AND bagian.referensi_bagian = ${referensi_bagian_id_rajal}
+        INNER JOIN mapping_poli_bpjs ON
+            bagian.bagian_id = mapping_poli_bpjs.bagian_id
+            AND mapping_poli_bpjs.kode_poli_bpjs = ${kode_poli_bpjs}
+            AND mapping_poli_bpjs.status_batal IS NULL
+        INNER JOIN penanggung_rawat ON
+            registrasi.registrasi_id = penanggung_rawat.registrasi_id
+        INNER JOIN users ON
+            penanggung_rawat.rawat_user_id = users.user_id
+        INNER JOIN dpjp_hfis ON
+            users.user_id = dpjp_hfis.user_id
+            AND dpjp_hfis.dpjp_hfis_kode = ${dpjp_hfis_kode.toString()}
+            AND dpjp_hfis.status_batal IS NULL
+        INNER JOIN jadwal_dokter ON
+            bagian.bagian_id = jadwal_dokter.bagian_id
+            AND registrasi_urut.pegawai_id = jadwal_dokter.pegawai_id
+            AND jadwal_dokter.hari = ${hari}
+        LEFT JOIN emr ON
+            registrasi.registrasi_id = emr.registrasi_id
+            AND emr.form_id = 3
+        WHERE
+            registrasi.status_batal IS NULL
+            AND registrasi.tgl_masuk::date = ${tgl_periksa}::date
+    `;
 
     return status_antrean;
 };
 
-const checkRegistrasiTerdaftar = async (pasien_id: any) => {
-    const checkRegistrasiPasien = `SELECT
-        registrasi.registrasi_id,
-        pegawai.nama_pegawai,
-        registrasi.tgl_masuk::date,
-        bagian.nama_bagian,
-        bagian.bagian_id,
-        mapping_poli_bpjs.kode_poli_bpjs
-    from
-        registrasi
-    inner join registrasi_detail on
-        registrasi.registrasi_id = registrasi_detail.registrasi_id
-        and registrasi_detail.status_batal is NULL
-    inner join penanggung_rawat on
-        penanggung_rawat.registrasi_id = registrasi.registrasi_id
-        and penanggung_rawat.status_batal is NULL
-    inner join pasien_nasabah on
-        pasien_nasabah.pasien_nasabah_id = registrasi.pasien_nasabah_id
-        and pasien_nasabah.status_batal is NULL
-    inner join registrasi_urut on
-        registrasi_detail.registrasi_detail_id = registrasi_urut.registrasi_detail_id
-        and registrasi_urut.status_batal is NULL
-    inner join pegawai on
-        registrasi_urut.pegawai_id = pegawai.pegawai_id
-    inner join bagian on
-        registrasi_detail.bagian_id = bagian.bagian_id 
-    inner join mapping_poli_bpjs on
-        bagian.bagian_id = mapping_poli_bpjs.bagian_id
-        and mapping_poli_bpjs.status_batal is NULL
-    where
-        registrasi.pasien_id = ${pasien_id}
-        and registrasi.tgl_masuk::DATE > now()::date
-        and pasien_nasabah.nasabah_id = '${nasabahBpjs}'
-        and registrasi.status_batal is null
-    order by tgl_masuk::date ASC`;
-    const checkRegistrasi = await prismaDb1.$queryRawUnsafe(checkRegistrasiPasien);
+const checkRegistrasiTerdaftar = async (pasien_id: number) => {
+    const checkRegistrasi = await prismaDb1.$queryRaw<any[]>`
+        SELECT
+            registrasi.registrasi_id,
+            pegawai.nama_pegawai,
+            registrasi.tgl_masuk::date AS tgl_masuk,
+            bagian.nama_bagian,
+            bagian.bagian_id,
+            mapping_poli_bpjs.kode_poli_bpjs
+        FROM registrasi
+        INNER JOIN registrasi_detail ON
+            registrasi.registrasi_id = registrasi_detail.registrasi_id
+            AND registrasi_detail.status_batal IS NULL
+        INNER JOIN penanggung_rawat ON
+            penanggung_rawat.registrasi_id = registrasi.registrasi_id
+            AND penanggung_rawat.status_batal IS NULL
+        INNER JOIN pasien_nasabah ON
+            pasien_nasabah.pasien_nasabah_id = registrasi.pasien_nasabah_id
+            AND pasien_nasabah.status_batal IS NULL
+        INNER JOIN registrasi_urut ON
+            registrasi_detail.registrasi_detail_id = registrasi_urut.registrasi_detail_id
+            AND registrasi_urut.status_batal IS NULL
+        INNER JOIN pegawai ON
+            registrasi_urut.pegawai_id = pegawai.pegawai_id
+        INNER JOIN bagian ON
+            registrasi_detail.bagian_id = bagian.bagian_id
+        INNER JOIN mapping_poli_bpjs ON
+            bagian.bagian_id = mapping_poli_bpjs.bagian_id
+            AND mapping_poli_bpjs.status_batal IS NULL
+        WHERE
+            registrasi.pasien_id = ${pasien_id}
+            AND registrasi.tgl_masuk::date > now()::date
+            AND pasien_nasabah.nasabah_id = ${nasabahBpjs}
+            AND registrasi.status_batal IS NULL
+        ORDER BY registrasi.tgl_masuk::date ASC
+    `;
 
     return checkRegistrasi;
 };
 
 const checkRegistrasiTerdaftarToday = async (data: any) => {
-    const checkRegistrasiPasien = `SELECT
-        registrasi.registrasi_id
-    from
-        registrasi
-    inner join registrasi_detail on
-        registrasi.registrasi_id = registrasi_detail.registrasi_id
-        and registrasi_detail.status_batal is NULL
-    inner join pasien_nasabah on
-        pasien_nasabah.pasien_nasabah_id = registrasi.pasien_nasabah_id
-        and pasien_nasabah.status_batal is NULL
-    inner join bagian on
-        registrasi_detail.bagian_id = bagian.bagian_id
-        and bagian.flag_eksekutif is null
-    inner join mapping_poli_bpjs on
-        bagian.bagian_id = mapping_poli_bpjs.bagian_id
-        and mapping_poli_bpjs.status_batal is NULL
-    where
-        registrasi.pasien_id = ${data.pasien_id}
-        and mapping_poli_bpjs.kode_poli_bpjs = '${data.kode_poli_bpjs}'
-        and registrasi.tgl_masuk::DATE = now()::date
-        and pasien_nasabah.nasabah_id = '${nasabahBpjs}'
-        and registrasi.status_batal is null
-    order by tgl_masuk::date ASC 
-    Limit 1`;
-    const checkRegistrasi = await prismaDb1.$queryRawUnsafe(checkRegistrasiPasien);
+    const checkRegistrasiPasien = await prismaDb1.$queryRaw<any[]>`
+        SELECT
+            registrasi.registrasi_id
+        from
+            registrasi
+        inner join registrasi_detail on
+            registrasi.registrasi_id = registrasi_detail.registrasi_id
+            and registrasi_detail.status_batal is NULL
+        inner join pasien_nasabah on
+            pasien_nasabah.pasien_nasabah_id = registrasi.pasien_nasabah_id
+            and pasien_nasabah.status_batal is NULL
+        inner join bagian on
+            registrasi_detail.bagian_id = bagian.bagian_id
+            and bagian.flag_eksekutif is null
+        inner join mapping_poli_bpjs on
+            bagian.bagian_id = mapping_poli_bpjs.bagian_id
+            and mapping_poli_bpjs.status_batal is NULL
+        where
+            registrasi.pasien_id = ${data.pasien_id}
+            and mapping_poli_bpjs.kode_poli_bpjs = ${data.kode_poli_bpjs}
+            and registrasi.tgl_masuk::DATE = now()::date
+            and pasien_nasabah.nasabah_id = ${nasabahBpjs}
+            and registrasi.status_batal is null
+        order by tgl_masuk::date ASC 
+        Limit 1
+    `;
 
-    return checkRegistrasi;
+    return checkRegistrasiPasien;
 };
 
 const checkEmrTerdaftar = async (data: any) => {
-    const checkEmrPasien = `SELECT
-        registrasi.registrasi_id
-    from
-        registrasi
-    inner join registrasi_detail on
-        registrasi.registrasi_id = registrasi_detail.registrasi_id
-        and registrasi_detail.status_batal is NULL
-    inner join bagian on
-        registrasi_detail.bagian_id = bagian.bagian_id
-        and bagian.flag_eksekutif is null
-    inner join mapping_poli_bpjs on
-        bagian.bagian_id = mapping_poli_bpjs.bagian_id
-        and mapping_poli_bpjs.status_batal is NULL
-    inner join pasien_nasabah on
-        pasien_nasabah.pasien_nasabah_id = registrasi.pasien_nasabah_id
-        and pasien_nasabah.status_batal is NULL
-    inner join emr on
-        registrasi.registrasi_id = emr.registrasi_id
-        and emr.status_batal is NULL
-    inner join pasien on
-        registrasi.pasien_id = pasien.pasien_id
-    where
-        pasien.no_mr = '${data.norm}'
-        and mapping_poli_bpjs.kode_poli_bpjs = '${data.kodepoli}'
-        and registrasi.tgl_masuk::DATE = now()::date
-        and pasien_nasabah.nasabah_id = '${nasabahBpjs}'
-        and registrasi.status_batal is null
-        and emr.form_id = '3'
-    order by tgl_masuk::date ASC 
-    Limit 1`;
-    const checkRegistrasi = await prismaDb1.$queryRawUnsafe(checkEmrPasien);
+    const checkEmrPasien = await prismaDb1.$queryRaw<any[]>`
+        SELECT
+            registrasi.registrasi_id
+        from
+            registrasi
+        inner join registrasi_detail on
+            registrasi.registrasi_id = registrasi_detail.registrasi_id
+            and registrasi_detail.status_batal is NULL
+        inner join bagian on
+            registrasi_detail.bagian_id = bagian.bagian_id
+            and bagian.flag_eksekutif is null
+        inner join mapping_poli_bpjs on
+            bagian.bagian_id = mapping_poli_bpjs.bagian_id
+            and mapping_poli_bpjs.status_batal is NULL
+        inner join pasien_nasabah on
+            pasien_nasabah.pasien_nasabah_id = registrasi.pasien_nasabah_id
+            and pasien_nasabah.status_batal is NULL
+        inner join emr on
+            registrasi.registrasi_id = emr.registrasi_id
+            and emr.status_batal is NULL
+        inner join pasien on
+            registrasi.pasien_id = pasien.pasien_id
+        where
+            pasien.no_mr = ${data.norm}
+            and mapping_poli_bpjs.kode_poli_bpjs = ${data.kodepoli}
+            and registrasi.tgl_masuk::DATE = now()::date
+            and pasien_nasabah.nasabah_id = ${nasabahBpjs}
+            and registrasi.status_batal is null
+            and emr.form_id = '3'
+        order by tgl_masuk::date ASC 
+        Limit 1
+    `;
 
-    return checkRegistrasi;
+    return checkEmrPasien;
 };
 
 const checkEmrValidasi = async (data: any) => {
-    const checkEmrPasien = `SELECT
-        registrasi.registrasi_id,
-        emr.form_id
-    from
-        registrasi
-    inner join registrasi_detail on
-        registrasi.registrasi_id = registrasi_detail.registrasi_id
-        and registrasi_detail.status_batal is null
-    inner join bagian on
-        registrasi_detail.bagian_id = bagian.bagian_id
-    inner join mapping_poli_bpjs on
-        bagian.bagian_id = mapping_poli_bpjs.bagian_id
-        and mapping_poli_bpjs.status_batal is null
-    inner join pasien_nasabah on
-        pasien_nasabah.pasien_nasabah_id = registrasi.pasien_nasabah_id
-        and pasien_nasabah.status_batal is null
-    inner join emr on
-        registrasi.registrasi_id = emr.registrasi_id
-        and emr.status_batal is null
-    where
-        registrasi.registrasi_id = ${data.kodebooking}
-        and registrasi.status_batal is null
-    order by
-        tgl_masuk::date asc
-    limit 1`;
-    const checkRegistrasi = await prismaDb1.$queryRawUnsafe(checkEmrPasien);
+    const checkEmrPasien = await prismaDb1.$queryRaw<any[]>`
+        SELECT
+            registrasi.registrasi_id,
+            emr.form_id
+        from
+            registrasi
+        inner join registrasi_detail on
+            registrasi.registrasi_id = registrasi_detail.registrasi_id
+            and registrasi_detail.status_batal is null
+        inner join bagian on
+            registrasi_detail.bagian_id = bagian.bagian_id
+        inner join mapping_poli_bpjs on
+            bagian.bagian_id = mapping_poli_bpjs.bagian_id
+            and mapping_poli_bpjs.status_batal is null
+        inner join pasien_nasabah on
+            pasien_nasabah.pasien_nasabah_id = registrasi.pasien_nasabah_id
+            and pasien_nasabah.status_batal is null
+        inner join emr on
+            registrasi.registrasi_id = emr.registrasi_id
+            and emr.status_batal is null
+        where
+            registrasi.registrasi_id = ${data.kodebooking}
+            and registrasi.status_batal is null
+        order by
+            tgl_masuk::date asc
+        limit 1
+    `;
 
-    return checkRegistrasi;
+    return checkEmrPasien;
 };
 
 const checkRujukanService = async (noRujukan: any) => {
@@ -251,7 +254,7 @@ const checkRujukanService = async (noRujukan: any) => {
 const insertRujukanService = async (data: any, inputUserId: any) => {
     const rujukanPasienId = await generateMaxDb1(
         "max_rujukan_sep_idx",
-        "rujukan_pasien_id"
+        "rujukan_pasien_id",
     );
     const insertRujukan = await prismaDb1.rujukan_pasien.create({
         data: {
@@ -277,23 +280,23 @@ const insertRujukanService = async (data: any, inputUserId: any) => {
 };
 
 const checkDataNasabahBPJS = async (norm: any) => {
-    const noMr = norm.toString().trim().padStart(8, "0")
-    const checkDataBPJS = `SELECT
-                                pasien_nasabah.pasien_nasabah_id,
-                                pasien.pasien_id
-                            FROM
-                                pasien
-                            LEFT JOIN pasien_nasabah ON
-                                pasien.pasien_id = pasien_nasabah.pasien_id
-                                AND pasien_nasabah.nasabah_id = '${nasabahBpjs}'
-                                AND pasien_nasabah.status_batal is null
-                            WHERE
-                                pasien.no_mr = '${noMr}'
-                            Limit 1
-                                `;
-    const checkData = await prismaDb1.$queryRawUnsafe(checkDataBPJS);
+    const noMr = norm.toString().trim().padStart(8, "0");
+    const checkDataBPJS = await prismaDb1.$queryRaw<any[]>`
+        SELECT
+            pasien_nasabah.pasien_nasabah_id,
+            pasien.pasien_id
+        FROM
+            pasien
+        LEFT JOIN pasien_nasabah ON
+            pasien.pasien_id = pasien_nasabah.pasien_id
+            AND pasien_nasabah.nasabah_id = ${nasabahBpjs}
+            AND pasien_nasabah.status_batal is null
+        WHERE
+            pasien.no_mr = ${noMr}
+        Limit 1
+    `;
 
-    return checkData;
+    return checkDataBPJS;
 };
 
 const insertDataNasabahBPJS = async (data: any) => {
@@ -301,7 +304,7 @@ const insertDataNasabahBPJS = async (data: any) => {
         data: {
             pasien_nasabah_id: await generateMaxDb1(
                 "max_pasien_nasabah_idx",
-                "pasien_nasabah_id"
+                "pasien_nasabah_id",
             ),
             input_time: dateNow(),
             input_user_id: data.input_user_id,
@@ -318,7 +321,7 @@ const checkHariLiburMerah = async (data: any) => {
     const hari_libur = await prismaDb1.tanggal_merah.findFirst({
         where: {
             tgl_libur: new Date(data.tanggalperiksa),
-            status_batal: null
+            status_batal: null,
         },
         select: {
             tanggal_merah_id: true,
@@ -326,69 +329,69 @@ const checkHariLiburMerah = async (data: any) => {
     });
 
     return hari_libur;
-}
+};
 
 const checkDokterReadyService = async (data: any) => {
     const hari = new Date(data.tanggalperiksa).getDay();
-    const checkDataDokterReady = `select
-                                pegawai.nama_pegawai,
-                                pegawai.pegawai_id,
-                                dpjp_hfis.dpjp_hfis_kode,
-                                cuti_dokter.keterangan,
-                                cuti_dokter.tanggal_awal::date tgl_awal_cuti,
-                                cuti_dokter.tanggal_akhir::date tgl_akhir_cuti,
-                                jadwal_dokter.kuota,
-                                jadwal_dokter.waktu_mulai,
-                                jadwal_dokter.waktu_selesai,
-                                users.user_id,
-                                bagian.nama_bagian,
-                                (
-                                select
-                                    count(registrasi_urut.registrasi_urut_id) as jumlah_terdaftar
-                                from
-                                    registrasi_urut
-                                where
-                                    registrasi_urut.bagian_id = ${data.bagian_id}
-                                    and registrasi_urut.pegawai_id = pegawai.pegawai_id
-                                    and registrasi_urut.status_batal is null
-                                    and tgl_urut::DATE = '${data.tanggalperiksa}'
-                                ) jumlah_terdaftar
-                            from
-                                jadwal_dokter
-                            inner join bagian on
-                                jadwal_dokter.bagian_id = bagian.bagian_id
-                            inner join pegawai on
-                                jadwal_dokter.pegawai_id = pegawai.pegawai_id
-                            inner join users on
-                                pegawai.pegawai_id = users.pegawai_id
-                            left outer join dpjp_hfis on
-                                users.user_id = dpjp_hfis.user_id
-                                and dpjp_hfis.status_batal is null
-                            left outer join cuti_dokter on
-                                cuti_dokter.cuti_user_id = users.user_id
-                                and cuti_dokter.tanggal_awal::date <= '${data.tanggalperiksa}'
-                                and cuti_dokter.tanggal_akhir::date >= '${data.tanggalperiksa}'
-                                and case 
-                                        when bagian.flag_eksekutif = 1 then cuti_dokter.flag_rajal_merial
-                                        else cuti_dokter.flag_rajal_reguler
-                                    end = 1
-                                and cuti_dokter.status_batal is null
-                            where
-                                jadwal_dokter.bagian_id = ${data.bagian_id}
-                                and users.user_id = ${data.dokter_id}
-                                and jadwal_dokter.status_batal is null
-                                and jadwal_dokter.hari = ${hari}
-                                and pegawai.status_batal is null
-                                `;
-    const checkData = await prismaDb1.$queryRawUnsafe(checkDataDokterReady);
+    const checkDataDokterReady = await prismaDb1.$queryRaw<any[]>`
+        SELECT
+            pegawai.nama_pegawai,
+            pegawai.pegawai_id,
+            dpjp_hfis.dpjp_hfis_kode,
+            cuti_dokter.keterangan,
+            cuti_dokter.tanggal_awal::date tgl_awal_cuti,
+            cuti_dokter.tanggal_akhir::date tgl_akhir_cuti,
+            jadwal_dokter.kuota,
+            jadwal_dokter.waktu_mulai,
+            jadwal_dokter.waktu_selesai,
+            users.user_id,
+            bagian.nama_bagian,
+            (
+            select
+                count(registrasi_urut.registrasi_urut_id) as jumlah_terdaftar
+            from
+                registrasi_urut
+            where
+                registrasi_urut.bagian_id = ${data.bagian_id}
+                and registrasi_urut.pegawai_id = pegawai.pegawai_id
+                and registrasi_urut.status_batal is null
+                and tgl_urut::DATE = ${data.tanggalperiksa}::date
+            ) jumlah_terdaftar
+        from
+            jadwal_dokter
+        inner join bagian on
+            jadwal_dokter.bagian_id = bagian.bagian_id
+        inner join pegawai on
+            jadwal_dokter.pegawai_id = pegawai.pegawai_id
+        inner join users on
+            pegawai.pegawai_id = users.pegawai_id
+        left outer join dpjp_hfis on
+            users.user_id = dpjp_hfis.user_id
+            and dpjp_hfis.status_batal is null
+        left outer join cuti_dokter on
+            cuti_dokter.cuti_user_id = users.user_id
+            and cuti_dokter.tanggal_awal::date <= ${data.tanggalperiksa}::date
+            and cuti_dokter.tanggal_akhir::date >= ${data.tanggalperiksa}::date
+            and case 
+                    when bagian.flag_eksekutif = 1 then cuti_dokter.flag_rajal_merial
+                    else cuti_dokter.flag_rajal_reguler
+                end = 1
+            and cuti_dokter.status_batal is null
+        where
+            jadwal_dokter.bagian_id = ${data.bagian_id}
+            and users.user_id = ${data.dokter_id}
+            and jadwal_dokter.status_batal is null
+            and jadwal_dokter.hari = ${hari}
+            and pegawai.status_batal is null
+    `;
 
-    return checkData;
+    return checkDataDokterReady;
 };
 
 const insertPendaftaranService = async (data: any) => {
     const registrasiId = await generateMaxDb1(
         "max_registrasi_idx",
-        "registrasi_id"
+        "registrasi_id",
     );
     const insertRegistrasi = await prismaDb1.registrasi.create({
         data: {
@@ -406,7 +409,7 @@ const insertPendaftaranService = async (data: any) => {
 
     const registrasiDetailId = await generateMaxDb1(
         "max_registrasi_detail_idx",
-        "registrasi_detail_id"
+        "registrasi_detail_id",
     );
     const insertRegistrasiDetail = await prismaDb1.registrasi_detail.create({
         data: {
@@ -423,14 +426,14 @@ const insertPendaftaranService = async (data: any) => {
 
     const registrasiUrutId = await generateMaxDb1(
         "max_registrasi_urut_idx",
-        "registrasi_urut_id"
+        "registrasi_urut_id",
     );
     const pegawaiId = await selectFieldDb1(
         "users",
         "pegawai_id",
         `where 
             status_batal is null 
-            and user_id = ${data.data.dokter_id}`
+            and user_id = ${data.data.dokter_id}`,
     );
     let antrian_rj, addminute;
 
@@ -438,7 +441,7 @@ const insertPendaftaranService = async (data: any) => {
     const antrianMax = await urutanMaxRajal(
         data.data.bagian_id,
         pegawaiId,
-        data.data.tanggalperiksa
+        data.data.tanggalperiksa,
     );
 
     if (!antrianMax || antrianMax === "") {
@@ -457,7 +460,7 @@ const insertPendaftaranService = async (data: any) => {
             bagian_id = ${data.data.bagian_id} 
             and pegawai_id = ${pegawaiId}
             and hari = ${hari}
-            and status_batal is null`
+            and status_batal is null`,
     );
     let jam_selesai = await selectFieldDb1(
         "jadwal_dokter",
@@ -466,7 +469,7 @@ const insertPendaftaranService = async (data: any) => {
             bagian_id = ${data.data.bagian_id} 
             and pegawai_id = ${pegawaiId}
             and hari = ${hari}
-            and status_batal is null`
+            and status_batal is null`,
     );
     jam_mulai = await timeHandler(jam_mulai);
     jam_selesai = await timeHandler(jam_selesai);
@@ -481,7 +484,7 @@ const insertPendaftaranService = async (data: any) => {
     let jamkontrol;
     if (new Date(time) >= new Date(bataskontrol + " UTC")) {
         jamkontrol = new Date(
-            new Date(bataskontrol + " UTC").getTime() - 3600000
+            new Date(bataskontrol + " UTC").getTime() - 3600000,
         ); // Mengurangi 1 jam dari batas kontrol
     } else {
         jamkontrol = time;
@@ -503,7 +506,7 @@ const insertPendaftaranService = async (data: any) => {
 
     const penanggungRawatId = await generateMaxDb1(
         "max_penanggung_rawat_idx",
-        "penanggung_rawat_id"
+        "penanggung_rawat_id",
     );
     const insertPenanggungRawat = await prismaDb1.penanggung_rawat.create({
         data: {
@@ -517,7 +520,7 @@ const insertPendaftaranService = async (data: any) => {
 
     const diagnosaRawatId = await generateMaxDb1(
         "max_diagnosa_rawat_idx",
-        "diagnosa_rawat_id"
+        "diagnosa_rawat_id",
     );
     const insertDiagnosaRawat = await prismaDb1.diagnosa_rawat.create({
         data: {
@@ -532,7 +535,7 @@ const insertPendaftaranService = async (data: any) => {
 
     const rujukanSepId = await generateMaxDb1(
         "max_rujukan_sep_idx",
-        "rujukan_sep_id"
+        "rujukan_sep_id",
     );
     const insertRujukanSep = await prismaDb1.rujukan_sep.create({
         data: {
@@ -544,7 +547,10 @@ const insertPendaftaranService = async (data: any) => {
         },
     });
 
-    const billTempId = await generateMaxDb1("max_bill_temp_idx", "bill_temp_id");
+    const billTempId = await generateMaxDb1(
+        "max_bill_temp_idx",
+        "bill_temp_id",
+    );
     const insertBillTemp = await prismaDb1.bill_temp.create({
         data: {
             bill_temp_id: billTempId,
@@ -560,20 +566,23 @@ const insertPendaftaranService = async (data: any) => {
         },
     });
 
-    const taskBpjsLogId = await generateMaxDb1("max_task_bpjs_log_idx", "task_bpjs_log_id");
+    const taskBpjsLogId = await generateMaxDb1(
+        "max_task_bpjs_log_idx",
+        "task_bpjs_log_id",
+    );
     const responseTaskBpjs = {
         metadata: {
             code: "200",
             message: "Success via mjkn",
-        }
-    }
+        },
+    };
     const insertTaskBpjsLog = await prismaDb1.task_bpjs_log.create({
         data: {
             task_bpjs_log_id: taskBpjsLogId,
             input_time: dateNow(),
             input_user_id: data.data.input_user_id,
             registrasi_id: registrasiId,
-            task_id: '0',
+            task_id: "0",
             push_time: dateNow(),
             response: responseTaskBpjs,
         },
@@ -582,7 +591,7 @@ const insertPendaftaranService = async (data: any) => {
     if (data.data.jeniskunjungan === 3) {
         const suratKontrolId = await generateMaxDb1(
             "surat_kontrol",
-            "surat_kontrol_id"
+            "surat_kontrol_id",
         );
         const insertSuratKontrol = await prismaDb1.surat_kontrol.create({
             data: {
@@ -599,17 +608,19 @@ const insertPendaftaranService = async (data: any) => {
     const namaDPJP = await selectFieldDb1(
         "users",
         "nama_pegawai",
-        `where user_id = ${data.data.dokter_id}`
+        `where user_id = ${data.data.dokter_id}`,
     );
 
     const namaBagian = await selectFieldDb1(
         "bagian",
         "nama_bagian",
-        `where bagian_id = ${data.data.bagian_id}`
+        `where bagian_id = ${data.data.bagian_id}`,
     );
 
     const sevenHoursInMilliseconds = 7 * 60 * 60 * 1000;
-    const adjustedTime = Math.floor(jampelayanan.getTime() - sevenHoursInMilliseconds);
+    const adjustedTime = Math.floor(
+        jampelayanan.getTime() - sevenHoursInMilliseconds,
+    );
 
     return {
         registrasi_id: registrasiId,
@@ -625,52 +636,49 @@ const insertPendaftaranService = async (data: any) => {
 
 const sisaDataAntrean = async (data: any) => {
     const registrasiId = parseInt(data.kodebooking, 10);
-    const sisaAntrean = `select
-                            registrasi_urut.urutan,
-                            bagian.nama_bagian,
-                            pegawai.nama_pegawai,
-                            (
-                            select 
-                                count(registrasi_urut.*)
-                            from
-                                registrasi_urut
-                            where 
-                                registrasi_urut.bagian_id = bagian.bagian_id
-                                and registrasi_urut.pegawai_id = pegawai.pegawai_id
-                                and registrasi_urut.tgl_urut::date = registrasi.tgl_masuk::date
-                                and registrasi_urut.status_panggil is null
-                                and registrasi_urut.status_batal is null
-                            ) sisaantrean,
-                            (
-                            select 
-                                registrasi_urut.urutan
-                            from
-                                registrasi_urut
-                            where 
-                                registrasi_urut.bagian_id = bagian.bagian_id
-                                and registrasi_urut.pegawai_id = pegawai.pegawai_id
-                                and registrasi_urut.tgl_urut::date = registrasi.tgl_masuk::date
-                                and registrasi_urut.status_panggil is not null
-                                and registrasi_urut.status_batal is null
-                            limit 1
-                            ) antreanpanggil
-                        from
-                            registrasi
-                        inner join registrasi_detail on
-                            registrasi.registrasi_id = registrasi_detail.registrasi_id
-                            and registrasi_detail.status_batal is null
-                        inner join registrasi_urut on
-                            registrasi_detail.registrasi_detail_id = registrasi_urut.registrasi_detail_id
-                            and registrasi_urut.status_batal is null
-                        inner join bagian on
-                            registrasi_detail.bagian_id = bagian.bagian_id
-                            and bagian.referensi_bagian = '1'
-                        inner join pegawai on
-                            registrasi_urut.pegawai_id = pegawai.pegawai_id
-                        where 
-                            registrasi.registrasi_id = ${registrasiId}
-                            and registrasi.status_batal is null`;
-    const checkData: any = await prismaDb1.$queryRawUnsafe(sisaAntrean);
+
+    const checkData: any = await prismaDb1.$queryRaw`
+        select
+            registrasi_urut.urutan,
+            bagian.nama_bagian,
+            pegawai.nama_pegawai,
+            (
+                select count(registrasi_urut.*)
+                from registrasi_urut
+                where 
+                    registrasi_urut.bagian_id = bagian.bagian_id
+                    and registrasi_urut.pegawai_id = pegawai.pegawai_id
+                    and registrasi_urut.tgl_urut::date = registrasi.tgl_masuk::date
+                    and registrasi_urut.status_panggil is null
+                    and registrasi_urut.status_batal is null
+            ) as sisaantrean,
+            (
+                select registrasi_urut.urutan
+                from registrasi_urut
+                where 
+                    registrasi_urut.bagian_id = bagian.bagian_id
+                    and registrasi_urut.pegawai_id = pegawai.pegawai_id
+                    and registrasi_urut.tgl_urut::date = registrasi.tgl_masuk::date
+                    and registrasi_urut.status_panggil is not null
+                    and registrasi_urut.status_batal is null
+                limit 1
+            ) as antreanpanggil
+        from registrasi
+        inner join registrasi_detail on
+            registrasi.registrasi_id = registrasi_detail.registrasi_id
+            and registrasi_detail.status_batal is null
+        inner join registrasi_urut on
+            registrasi_detail.registrasi_detail_id = registrasi_urut.registrasi_detail_id
+            and registrasi_urut.status_batal is null
+        inner join bagian on
+            registrasi_detail.bagian_id = bagian.bagian_id
+            and bagian.referensi_bagian = '1'
+        inner join pegawai on
+            registrasi_urut.pegawai_id = pegawai.pegawai_id
+        where 
+            registrasi.registrasi_id = ${registrasiId}
+            and registrasi.status_batal is null
+    `;
 
     return checkData[0];
 };
@@ -691,7 +699,7 @@ const batalDataAntrean = async (data: any) => {
     const registrasiDetailId = await selectFieldDb1(
         "registrasi_detail",
         "registrasi_detail_id",
-        `where registrasi_id = ${registrasiId} and status_batal is null`
+        `where registrasi_id = ${registrasiId} and status_batal is null`,
     );
     const batalRegistrasiDetail: any =
         await prismaDb1.registrasi_detail.updateMany({
@@ -705,27 +713,30 @@ const batalDataAntrean = async (data: any) => {
             },
         });
 
-    const batalRegistrasiUrut: any = await prismaDb1.registrasi_urut.updateMany({
-        where: {
-            registrasi_detail_id: registrasiDetailId,
+    const batalRegistrasiUrut: any = await prismaDb1.registrasi_urut.updateMany(
+        {
+            where: {
+                registrasi_detail_id: registrasiDetailId,
+            },
+            data: {
+                status_batal: 1,
+                mod_time: dateNow(),
+                mod_user_id: data.input_user_id,
+            },
         },
-        data: {
-            status_batal: 1,
-            mod_time: dateNow(),
-            mod_user_id: data.input_user_id,
-        },
-    });
+    );
 
-    const batalPenanggungRawat: any = await prismaDb1.penanggung_rawat.updateMany({
-        where: {
-            registrasi_id: registrasiId,
-        },
-        data: {
-            status_batal: 1,
-            mod_time: dateNow(),
-            mod_user_id: data.input_user_id,
-        },
-    });
+    const batalPenanggungRawat: any =
+        await prismaDb1.penanggung_rawat.updateMany({
+            where: {
+                registrasi_id: registrasiId,
+            },
+            data: {
+                status_batal: 1,
+                mod_time: dateNow(),
+                mod_user_id: data.input_user_id,
+            },
+        });
 
     const batalDiagnosaRawat: any = await prismaDb1.diagnosa_rawat.updateMany({
         where: {
@@ -780,7 +791,7 @@ const checkInData = async (data: any) => {
     const registrasiDetailId = await selectFieldDb1(
         "registrasi_detail",
         "registrasi_detail_id",
-        `where registrasi_id = ${registrasiId} and status_batal is null`
+        `where registrasi_id = ${registrasiId} and status_batal is null`,
     );
     const checkIn = await prismaDb1.registrasi_urut.updateMany({
         where: {
@@ -794,16 +805,19 @@ const checkInData = async (data: any) => {
         },
     });
 
-    const task_bpjs_log_id_max = await generateMaxDb1("max_task_bpjs_log_idx", "task_bpjs_log_id");
+    const task_bpjs_log_id_max = await generateMaxDb1(
+        "max_task_bpjs_log_idx",
+        "task_bpjs_log_id",
+    );
     const taskIdCheckIn = await prismaDb1.task_bpjs_log.create({
         data: {
             task_bpjs_log_id: task_bpjs_log_id_max,
             input_time: dateNow(),
             input_user_id: data.input_user_id,
-            task_id: '3',
+            task_id: "3",
             registrasi_id: registrasiId,
             push_time: dateNow(),
-        }
+        },
     });
 
     return checkIn;
@@ -838,173 +852,171 @@ const insertPasienBaru = async (data: any) => {
 };
 
 const listJadwalOperasi = async (data: any) => {
-    const listOperasi = `SELECT
-                            kodebooking,
-                            jenistindakan,
-                            namapoli,
-                            kodepoli,
-                            tanggaloperasi,
-                            nopeserta,
-                            (
-                            case
-                                when laporan_operasi is not null then 1
-                                else 0
-                            end ) as terlaksana
-                        from
-                            (
-                            select
-                                pesan_slot_bedah.pesan_slot_bedah_id as kodebooking,
-                                pesan_slot_bedah.jenis_tindakan_bedah as jenistindakan,
-                                (
-                                    case 
-                                        when bagian.nama_bagian is not null then bagian.nama_bagian
-                                        else bagian_ranap.nama_bagian
-                                    end 
-                                ) as namapoli,
-                                (
-                                    case 
-                                        when mapping_poli_bpjs.kode_poli_bpjs is not null then mapping_poli_bpjs.kode_poli_bpjs
-                                        else mapping_poli_bpjs_ranap.kode_poli_bpjs
-                                    end 
-                                ) as kodepoli,
-                                pesan_slot_bedah.tgl_rencana_operasi as tanggaloperasi,
-                                pasien_nasabah.no_peserta as nopeserta,
-                                (
-                                select
-                                    emr.emr_id
-                                from
-                                    emr
-                                where
-                                    emr.form_id = 27
-                                    and emr.status_batal is null
-                                    and emr.registrasi_id = registrasi_detail.registrasi_id
-                                limit 1 ) as laporan_operasi
-                            from
-                                pesan_slot_bedah
-                            left outer join registrasi_detail on
-                                pesan_slot_bedah.registrasi_detail_id = registrasi_detail.registrasi_detail_id
-                            left outer join bagian on
-                                registrasi_detail.bagian_asal_id = bagian.bagian_id
-                                AND bagian.referensi_bagian = 1 
-                            left outer join mapping_poli_bpjs on
-                                mapping_poli_bpjs.bagian_id = bagian.bagian_id
-                            left outer join registrasi on
-                                registrasi.registrasi_id = registrasi_detail.registrasi_id
-                            left outer join pasien_nasabah on
-                                registrasi.pasien_nasabah_id = pasien_nasabah.pasien_nasabah_id
-                                and pasien_nasabah.nasabah_id = '${nasabahBpjs}'
-                            left outer join penanggung_rawat on
-                                registrasi.registrasi_id = penanggung_rawat.registrasi_id
-                            left outer join users on
-                                penanggung_rawat.rawat_user_id = users.user_id 
-                            left outer join pegawai on 
-                                users.pegawai_id = pegawai.pegawai_id
-                            left outer join bagian as bagian_ranap on 
-                                pegawai.bagian_id = bagian_ranap.bagian_id
-                            left outer join mapping_poli_bpjs as mapping_poli_bpjs_ranap on 
-                                bagian_ranap.bagian_id = mapping_poli_bpjs_ranap.bagian_id
-                            where
-                                registrasi.status_batal is null
-                                and registrasi_detail.status_batal is null
-                                and mapping_poli_bpjs.status_batal is null
-                                and pesan_slot_bedah.status_batal is null
-                                and cast(pesan_slot_bedah.tgl_rencana_operasi as date) between '${data.tanggalawal}' AND '${data.tanggalakhir}' ) as data_operasi`;
-    const listOperasiResult: any = await prismaDb1.$queryRawUnsafe(listOperasi);
+    const listOperasi = await prismaDb1.$queryRaw`
+        SELECT
+        kodebooking,
+        jenistindakan,
+        namapoli,
+        kodepoli,
+        tanggaloperasi,
+        nopeserta,
+        (
+        case
+            when laporan_operasi is not null then 1
+            else 0
+        end ) as terlaksana
+    from
+        (
+        select
+            pesan_slot_bedah.pesan_slot_bedah_id as kodebooking,
+            pesan_slot_bedah.jenis_tindakan_bedah as jenistindakan,
+            (
+                case 
+                    when bagian.nama_bagian is not null then bagian.nama_bagian
+                    else bagian_ranap.nama_bagian
+                end 
+            ) as namapoli,
+            (
+                case 
+                    when mapping_poli_bpjs.kode_poli_bpjs is not null then mapping_poli_bpjs.kode_poli_bpjs
+                    else mapping_poli_bpjs_ranap.kode_poli_bpjs
+                end 
+            ) as kodepoli,
+            pesan_slot_bedah.tgl_rencana_operasi as tanggaloperasi,
+            pasien_nasabah.no_peserta as nopeserta,
+            (
+            select
+                emr.emr_id
+            from
+                emr
+            where
+                emr.form_id = 27
+                and emr.status_batal is null
+                and emr.registrasi_id = registrasi_detail.registrasi_id
+            limit 1 ) as laporan_operasi
+        from
+            pesan_slot_bedah
+        left outer join registrasi_detail on
+            pesan_slot_bedah.registrasi_detail_id = registrasi_detail.registrasi_detail_id
+        left outer join bagian on
+            registrasi_detail.bagian_asal_id = bagian.bagian_id
+            AND bagian.referensi_bagian = 1 
+        left outer join mapping_poli_bpjs on
+            mapping_poli_bpjs.bagian_id = bagian.bagian_id
+        left outer join registrasi on
+            registrasi.registrasi_id = registrasi_detail.registrasi_id
+        left outer join pasien_nasabah on
+            registrasi.pasien_nasabah_id = pasien_nasabah.pasien_nasabah_id
+            and pasien_nasabah.nasabah_id = ${nasabahBpjs}
+        left outer join penanggung_rawat on
+            registrasi.registrasi_id = penanggung_rawat.registrasi_id
+        left outer join users on
+            penanggung_rawat.rawat_user_id = users.user_id 
+        left outer join pegawai on 
+            users.pegawai_id = pegawai.pegawai_id
+        left outer join bagian as bagian_ranap on 
+            pegawai.bagian_id = bagian_ranap.bagian_id
+        left outer join mapping_poli_bpjs as mapping_poli_bpjs_ranap on 
+            bagian_ranap.bagian_id = mapping_poli_bpjs_ranap.bagian_id
+        where
+            registrasi.status_batal is null
+            and registrasi_detail.status_batal is null
+            and mapping_poli_bpjs.status_batal is null
+            and pesan_slot_bedah.status_batal is null
+            and cast(pesan_slot_bedah.tgl_rencana_operasi as date) between ${data.tanggalawal}::date AND ${data.tanggalakhir}::date ) as data_operasi
+    `;
 
-    return listOperasiResult;
+    return listOperasi;
 };
 
 const getTindakanBedah = async (jenistindakan: any) => {
-    const tindakanBedah = `SELECT 
-                                detail_tindakan_bedah.nama_tindakan_bedah
-                            FROM
-                                detail_tindakan_bedah
-                            WHERE
-                                detail_tindakan_bedah.detail_tindakan_bedah_id = ${jenistindakan}`;
-    const tindakanBedahResult: any = await prismaDb1.$queryRawUnsafe(
-        tindakanBedah
-    );
+    const tindakanBedah: any = await prismaDb1.$queryRaw`
+        SELECT 
+            detail_tindakan_bedah.nama_tindakan_bedah
+        FROM
+            detail_tindakan_bedah
+        WHERE
+            detail_tindakan_bedah.detail_tindakan_bedah_id = ${jenistindakan}`;
 
-    return tindakanBedahResult[0].nama_tindakan_bedah;
+    return tindakanBedah[0].nama_tindakan_bedah;
 };
 
 const getJadwalOperasi = async (data: any) => {
-    const jadwalOperasi = `SELECT
-                                kodebooking,
-                                jenistindakan,
-                                namapoli,
-                                kodepoli,
-                                tanggaloperasi,
-                                nopeserta,
-                                (
-                                case
-                                    when laporan_operasi is not null then 1
-                                    else 0
-                                end ) as terlaksana
-                            from
-                                (
-                                select
-                                    pesan_slot_bedah.pesan_slot_bedah_id as kodebooking,
-                                    pesan_slot_bedah.jenis_tindakan_bedah as jenistindakan,
-                                    (
-                                        case 
-                                            when bagian.nama_bagian is not null then bagian.nama_bagian
-                                            else bagian_ranap.nama_bagian
-                                        end 
-                                    ) as namapoli,
-                                    (
-                                        case 
-                                            when mapping_poli_bpjs.kode_poli_bpjs is not null then mapping_poli_bpjs.kode_poli_bpjs
-                                            else mapping_poli_bpjs_ranap.kode_poli_bpjs
-                                        end 
-                                    ) as kodepoli,
-                                    pesan_slot_bedah.tgl_rencana_operasi as tanggaloperasi,
-                                    pasien_nasabah.no_peserta as nopeserta,
-                                    (
-                                    select
-                                        emr.emr_id
-                                    from
-                                        emr
-                                    where
-                                        emr.form_id = 27
-                                        and emr.status_batal is null
-                                        and emr.registrasi_id = registrasi_detail.registrasi_id
-                                    limit 1 ) as laporan_operasi
-                                from
-                                    pesan_slot_bedah
-                                left outer join registrasi_detail on
-                                    pesan_slot_bedah.registrasi_detail_id = registrasi_detail.registrasi_detail_id
-                                left outer join bagian on
-                                    registrasi_detail.bagian_asal_id = bagian.bagian_id
-                                    AND bagian.referensi_bagian = 1 
-                                left outer join mapping_poli_bpjs on
-                                    mapping_poli_bpjs.bagian_id = bagian.bagian_id
-                                left outer join registrasi on
-                                    registrasi.registrasi_id = registrasi_detail.registrasi_id
-                                left outer join pasien_nasabah on
-                                    registrasi.pasien_nasabah_id = pasien_nasabah.pasien_nasabah_id
-                                    and pasien_nasabah.nasabah_id = '${nasabahBpjs}'
-                                left outer join penanggung_rawat on
-                                    registrasi.registrasi_id = penanggung_rawat.registrasi_id
-                                left outer join users on
-                                    penanggung_rawat.rawat_user_id = users.user_id 
-                                left outer join pegawai on 
-                                    users.pegawai_id = pegawai.pegawai_id
-                                left outer join bagian as bagian_ranap on 
-                                    pegawai.bagian_id = bagian_ranap.bagian_id
-                                left outer join mapping_poli_bpjs as mapping_poli_bpjs_ranap on 
-                                    bagian_ranap.bagian_id = mapping_poli_bpjs_ranap.bagian_id
-                                where
-                                    registrasi.status_batal is null
-                                    and registrasi_detail.status_batal is null
-                                    and mapping_poli_bpjs.status_batal is null
-                                    and pesan_slot_bedah.status_batal is null
-                                    and pasien_nasabah.no_peserta = '${data.nopeserta}' ) as data_operasi`;
-    const jadwalOperasiResult: any = await prismaDb1.$queryRawUnsafe(
-        jadwalOperasi
-    );
+    const jadwalOperasi = await prismaDb1.$queryRaw`
+        SELECT
+        kodebooking,
+        jenistindakan,
+        namapoli,
+        kodepoli,
+        tanggaloperasi,
+        nopeserta,
+        (
+        case
+            when laporan_operasi is not null then 1
+            else 0
+        end ) as terlaksana
+    from
+        (
+        select
+            pesan_slot_bedah.pesan_slot_bedah_id as kodebooking,
+            pesan_slot_bedah.jenis_tindakan_bedah as jenistindakan,
+            (
+                case 
+                    when bagian.nama_bagian is not null then bagian.nama_bagian
+                    else bagian_ranap.nama_bagian
+                end 
+            ) as namapoli,
+            (
+                case 
+                    when mapping_poli_bpjs.kode_poli_bpjs is not null then mapping_poli_bpjs.kode_poli_bpjs
+                    else mapping_poli_bpjs_ranap.kode_poli_bpjs
+                end 
+            ) as kodepoli,
+            pesan_slot_bedah.tgl_rencana_operasi as tanggaloperasi,
+            pasien_nasabah.no_peserta as nopeserta,
+            (
+            select
+                emr.emr_id
+            from
+                emr
+            where
+                emr.form_id = 27
+                and emr.status_batal is null
+                and emr.registrasi_id = registrasi_detail.registrasi_id
+            limit 1 ) as laporan_operasi
+        from
+            pesan_slot_bedah
+        left outer join registrasi_detail on
+            pesan_slot_bedah.registrasi_detail_id = registrasi_detail.registrasi_detail_id
+        left outer join bagian on
+            registrasi_detail.bagian_asal_id = bagian.bagian_id
+            AND bagian.referensi_bagian = 1 
+        left outer join mapping_poli_bpjs on
+            mapping_poli_bpjs.bagian_id = bagian.bagian_id
+        left outer join registrasi on
+            registrasi.registrasi_id = registrasi_detail.registrasi_id
+        left outer join pasien_nasabah on
+            registrasi.pasien_nasabah_id = pasien_nasabah.pasien_nasabah_id
+            and pasien_nasabah.nasabah_id = ${nasabahBpjs}
+        left outer join penanggung_rawat on
+            registrasi.registrasi_id = penanggung_rawat.registrasi_id
+        left outer join users on
+            penanggung_rawat.rawat_user_id = users.user_id 
+        left outer join pegawai on 
+            users.pegawai_id = pegawai.pegawai_id
+        left outer join bagian as bagian_ranap on 
+            pegawai.bagian_id = bagian_ranap.bagian_id
+        left outer join mapping_poli_bpjs as mapping_poli_bpjs_ranap on 
+            bagian_ranap.bagian_id = mapping_poli_bpjs_ranap.bagian_id
+        where
+            registrasi.status_batal is null
+            and registrasi_detail.status_batal is null
+            and mapping_poli_bpjs.status_batal is null
+            and pesan_slot_bedah.status_batal is null
+            and pasien_nasabah.no_peserta = ${data.nopeserta} ) as data_operasi
+    `;
 
-    return jadwalOperasiResult;
+    return jadwalOperasi;
 };
 
 const checkPasienId = async (nik: any) => {
@@ -1024,9 +1036,9 @@ const checkPasienId = async (nik: any) => {
 const urutanMaxRajal = async (
     bagianId: any,
     pegawaiId: any,
-    tglKunjungan: any
+    tglKunjungan: any,
 ) => {
-    const urutanRajal = `SELECT 
+    const urutanRajal: any = await prismaDb1.$queryRaw`SELECT 
                             MAX(urutan) as antrian_max
                         FROM 
                             registrasi_urut 
@@ -1034,11 +1046,10 @@ const urutanMaxRajal = async (
                             status_batal IS NULL
                             AND bagian_id = ${bagianId}
                             AND pegawai_id = ${pegawaiId}
-                            AND tgl_urut::date = '${tglKunjungan}'`;
-    const checkData: any = await prismaDb1.$queryRawUnsafe(urutanRajal);
+                            AND tgl_urut::date = ${tglKunjungan}::date`;
 
-    if (checkData[0].antrian_max > 0) {
-        return checkData[0].antrian_max;
+    if (urutanRajal[0].antrian_max > 0) {
+        return urutanRajal[0].antrian_max;
     } else {
         return 0;
     }

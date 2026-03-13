@@ -8,6 +8,7 @@ import {
 } from "express-validator";
 import * as dotenv from "dotenv";
 import { authenticateToken } from "./../../../middlewares/auth";
+import { payloadThrottle } from "./../../../middlewares/throttle";
 import jwt from "jsonwebtoken";
 const secretKey: string = process.env.secretKey || "";
 
@@ -22,7 +23,10 @@ import {
     listJadwalOperasiService,
     jadwalOperasiService,
 } from "./jknmobile.service";
-import { checkDpjpHfis, checkPoliHfis } from "./jknmobile.repository";
+import {
+    checkDpjpHfis,
+    checkPoliHfis,
+} from "./jknmobile.repository";
 import {
     isLocked,
     createLock,
@@ -78,7 +82,7 @@ router.get(
                     secretKey,
                     {
                         expiresIn: "1h",
-                    }
+                    },
                 );
 
                 res.cookie("jwt", token, {
@@ -108,21 +112,22 @@ router.get(
         } catch (err) {
             next(err);
         }
-    }
+    },
 );
 
 router.post(
     "/status-antrean",
     authenticateToken,
+    payloadThrottle,
     [
         body("kodepoli")
             .notEmpty()
             .custom(async (value) => {
-                const poli_hfis = await checkPoliHfis(value);
+                const poli_hfis: any = await checkPoliHfis(value);
 
-                if (!poli_hfis) {
+                if (poli_hfis.length === 0) {
                     return Promise.reject(
-                        "Kode Poli Tidak Terdaftar Di SIMRS!"
+                        "Kode Poli Tidak Terdaftar Di SIMRS!",
                     );
                 }
             }),
@@ -130,11 +135,11 @@ router.post(
             .notEmpty()
             .custom(async (value) => {
                 value = value.toString();
-                const dpjp_hfis = await checkDpjpHfis(value);
+                const dpjp_hfis: any = await checkDpjpHfis(value);
 
                 if (!dpjp_hfis) {
                     return Promise.reject(
-                        "Kode Dokter Tidak Terdaftar Di SIMRS!"
+                        "Kode Dokter Tidak Terdaftar Di SIMRS!",
                     );
                 }
             }),
@@ -177,12 +182,13 @@ router.post(
         } catch (err) {
             next(err);
         }
-    }
+    },
 );
 
 router.post(
     "/daftar-perjanjian",
     authenticateToken,
+    payloadThrottle,
     [
         body("nomorkartu").notEmpty(),
         body("nik").notEmpty(),
@@ -194,7 +200,7 @@ router.post(
 
                 if (poli_hfis.length == 0) {
                     return Promise.reject(
-                        "Kode Poli Tidak Terdaftar Di SIMRS!"
+                        "Kode Poli Tidak Terdaftar Di SIMRS!",
                     );
                 } else {
                     req.body.bagian_id = poli_hfis[0].bagian_id;
@@ -209,7 +215,7 @@ router.post(
 
                 if (!dpjp_hfis) {
                     return Promise.reject(
-                        "Kode Dokter Tidak Terdaftar Di SIMRS!"
+                        "Kode Dokter Tidak Terdaftar Di SIMRS!",
                     );
                 } else {
                     req.body.dokter_id = dpjp_hfis.user_id;
@@ -246,7 +252,7 @@ router.post(
             createLock(lockKey);
 
             const createRegistrasi: any = await daftarPerjanjianService(
-                req.body
+                req.body,
             );
 
             if (createRegistrasi.code === 200) {
@@ -271,12 +277,13 @@ router.post(
         } finally {
             removeLock(lockKey);
         }
-    }
+    },
 );
 
 router.post(
     "/sisa-antrean",
     authenticateToken,
+    payloadThrottle,
     [body("kodebooking").notEmpty()],
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -313,12 +320,13 @@ router.post(
         } catch (err) {
             next(err);
         }
-    }
+    },
 );
 
 router.post(
     "/batal-antrean",
     authenticateToken,
+    payloadThrottle,
     [body("kodebooking").notEmpty()],
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -354,12 +362,13 @@ router.post(
         } catch (err) {
             next(err);
         }
-    }
+    },
 );
 
 router.post(
     "/check-in",
     authenticateToken,
+    payloadThrottle,
     [body("kodebooking").notEmpty()],
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -395,12 +404,13 @@ router.post(
         } catch (err) {
             next(err);
         }
-    }
+    },
 );
 
 router.post(
     "/pasien-baru",
     authenticateToken,
+    payloadThrottle,
     [
         body("nomorkartu").notEmpty(),
         body("nik").notEmpty(),
@@ -447,12 +457,13 @@ router.post(
         } catch (err) {
             next(err);
         }
-    }
+    },
 );
 
 router.post(
     "/list-jadwal-operasi",
     authenticateToken,
+    payloadThrottle,
     [
         body("tanggalawal").notEmpty().isISO8601(),
         body("tanggalakhir")
@@ -461,7 +472,7 @@ router.post(
             .custom((value, { req }) => {
                 if (new Date(value) < new Date(req.body.tanggalawal)) {
                     throw new Error(
-                        "Tanggal akhir tidak boleh lebih kecil dari tanggal awal"
+                        "Tanggal akhir tidak boleh lebih kecil dari tanggal awal",
                     );
                 }
                 return true;
@@ -482,7 +493,7 @@ router.post(
             }
 
             const listJadwalOperasi: any = await listJadwalOperasiService(
-                req.body
+                req.body,
             );
             if (listJadwalOperasi.code === 200) {
                 res.send({
@@ -505,12 +516,13 @@ router.post(
         } catch (err) {
             next(err);
         }
-    }
+    },
 );
 
 router.post(
     "/jadwal-operasi",
     authenticateToken,
+    payloadThrottle,
     [body("nopeserta").notEmpty()],
     async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -548,12 +560,13 @@ router.post(
         } catch (err) {
             next(err);
         }
-    }
+    },
 );
 
 router.post(
     "/ambil-antrean-farmasi",
     authenticateToken,
+    payloadThrottle,
     async (req: Request, res: Response, next: NextFunction) => {
         try {
             res.send({
@@ -562,12 +575,13 @@ router.post(
         } catch (err) {
             next(err);
         }
-    }
+    },
 );
 
 router.post(
     "/status-antrean-farmasi",
     authenticateToken,
+    payloadThrottle,
     async (req: Request, res: Response, next: NextFunction) => {
         try {
             res.send({
@@ -576,12 +590,13 @@ router.post(
         } catch (err) {
             next(err);
         }
-    }
+    },
 );
 
 router.post(
     "/rekap-antrian",
     authenticateToken,
+    payloadThrottle,
     async (req: Request, res: Response, next: NextFunction) => {
         try {
             res.send({
@@ -590,5 +605,5 @@ router.post(
         } catch (err) {
             next(err);
         }
-    }
+    },
 );
