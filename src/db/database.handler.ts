@@ -1,4 +1,4 @@
-import { prismaDb1, prismaDb2, prismaDb3 } from "./index";
+import { prismaDb1, prismaDb2, prismaDb3, prismaDb4 } from "./index";
 
 const generateMaxDb1 = async (
     sequenceName: string,
@@ -90,6 +90,43 @@ const generateMaxDb2 = async (
     return generateMax;
 };
 
+const generateMaxDb4 = async (
+    sequenceName: string,
+    field?: string | any,
+    conditions?: string | any
+) => {
+    const queryCheckSequence = `
+        select
+            sequence_name
+        from
+            information_schema.sequences
+        where
+            sequence_name = '${sequenceName}';`;
+    const sequenceCheck: any = await prismaDb4.$queryRawUnsafe(
+        queryCheckSequence
+    );
+
+    let generateMax;
+    if (sequenceCheck.length === 0) {
+        const rawQuery = `
+            SELECT 
+                COALESCE(MAX(${field})+1, 1) as maxid
+            FROM
+                ${sequenceName}
+                ${conditions};`;
+        const sequenceCheck: any = await prismaDb4.$queryRawUnsafe(rawQuery);
+
+        generateMax = parseInt(sequenceCheck[0].maxid.toString());
+    } else {
+        const rawQuery: any = await prismaDb4.$queryRaw`SELECT 
+            nextval(${sequenceName}) as nextval`;
+
+        generateMax = parseInt(rawQuery[0].nextval.toString());
+    }
+
+    return generateMax;
+};
+
 const selectFieldDb2 = async (
     tableName: string,
     field: string | any,
@@ -122,4 +159,5 @@ export {
     timeHandler,
     generateMaxDb2,
     selectFieldDb2,
+    generateMaxDb4,
 };
