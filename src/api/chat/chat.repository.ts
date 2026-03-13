@@ -42,7 +42,7 @@ const checkChatIdRepo = async (data: any) => {
 const saveChat = async (data: any) => {
     let chatId = 0;
     if (!data.chat_id) {
-        chatId = await generateMaxDb1("chat", "chat_id");
+        chatId = await generateMaxDb1("max_chat_idx", "chat_id");
         const insertChat = await prismaDb1.chat.create({
             data: {
                 chat_id: chatId,
@@ -57,7 +57,7 @@ const saveChat = async (data: any) => {
         chatId = data.chat_id;
     }
 
-    const chatDetailId = await generateMaxDb1("chat_detail", "chat_detail_id");
+    const chatDetailId = await generateMaxDb1("max_chat_detail_idx", "chat_detail_id");
     const insertChatDetail = await prismaDb1.chat_detail.create({
         data: {
             chat_detail_id: chatDetailId,
