@@ -22,7 +22,7 @@ const getAllergyIntoleranceRequest = async (limit: string, registrasi_id: string
         queryWhereTransaction =
             "AND (ta.transaction_satu_sehat_id is null or ta.key_satu_sehat = '0')";
     } else {
-        queryDate = `AND r.tgl_masuk::date = now()::date`;
+        queryDate = `AND r.tgl_masuk >= (now()::date - interval '3 days') AND r.tgl_masuk < now()::date + interval '1 day'`;
         queryRegistrasiId = "";
         queryWhereTransaction = `AND ta.transaction_satu_sehat_id is null`;
     }

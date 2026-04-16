@@ -416,7 +416,7 @@ const sendObservationRadService = async (limit: string) => {
 
                 if (response.status === 201) {
                     const updateInsertIdPatient = updateInsertIdObservationRepo(
-                        element.hasil_rad_id,
+                        element.hasil_rad_detail_id,
                         payload,
                         response.data,
                         response.data.id,

@@ -22,7 +22,7 @@ const getClinicImpressionRequest = async (limit: string, emr_detail_id: string =
         queryWhereTransaction =
             "AND (transaction_satu_sehat_clinicimpression.transaction_satu_sehat_id is null or transaction_satu_sehat_clinicimpression.key_satu_sehat = '0')";
     } else {
-        queryDate = `AND registrasi.tgl_masuk::date = now()::date`;
+        queryDate = `AND registrasi.tgl_masuk >= (now()::date - interval '3 days') AND registrasi.tgl_masuk < now()::date + interval '1 day'`;
         queryEmrDetail = "";
         queryWhereTransaction = `AND transaction_satu_sehat_clinicimpression.transaction_satu_sehat_id is null`;
     }
@@ -82,7 +82,7 @@ const getClinicImpressionRequest = async (limit: string, emr_detail_id: string =
             and transaction_satu_sehat_encounter.transaction_type = 'Encounter'
         left outer join transaction_satu_sehat transaction_satu_sehat_clinicimpression on
             emr_detail.emr_detail_id = transaction_satu_sehat_clinicimpression.key_simrs
-            and transaction_satu_sehat_clinicimpression.transaction_type = 'Observation'
+            and transaction_satu_sehat_clinicimpression.transaction_type = 'ClinicalImpression'
         where 
             registrasi.status_batal is null
             and transaction_satu_sehat_encounter.key_satu_sehat is not null

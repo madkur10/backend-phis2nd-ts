@@ -410,7 +410,7 @@ const listJadwalOperasiService = async (data: any) => {
                     await Promise.all(
                         matches.map(async (value: any) => {
                             const getNamaTindakanBedah = await getTindakanBedah(
-                                value
+                                parseInt(value, 10)
                             );
                             jenisTindakan.push(getNamaTindakanBedah);
                         })
@@ -461,7 +461,7 @@ const jadwalOperasiService = async (data: any) => {
                     await Promise.all(
                         matches.map(async (value: any) => {
                             const getNamaTindakanBedah = await getTindakanBedah(
-                                value
+                                parseInt(value, 10)
                             );
                             jenisTindakan.push(getNamaTindakanBedah);
                         })

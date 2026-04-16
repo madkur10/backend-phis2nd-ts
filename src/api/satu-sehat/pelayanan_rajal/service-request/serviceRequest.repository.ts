@@ -8,7 +8,10 @@ import {
 } from "./../../../../db/database.handler";
 import { dateNow } from "./../../../../middlewares/time";
 
-const getDataServiceRequest = async (limit: string, hasil_rad_detail_id: string = "") => {
+const getDataServiceRequest = async (
+    limit: string,
+    hasil_rad_detail_id: string = "",
+) => {
     let queryHasilRad;
     let queryDate;
     let queryWhereTransaction;
@@ -16,12 +19,12 @@ const getDataServiceRequest = async (limit: string, hasil_rad_detail_id: string 
         queryDate = "";
         queryHasilRad = `AND hasil_rad_detail.hasil_rad_detail_id = ${parseInt(
             hasil_rad_detail_id,
-            10
+            10,
         )}`;
         queryWhereTransaction =
             "AND (tss_rad.transaction_satu_sehat_id is null or tss_rad.key_satu_sehat = '0')";
     } else {
-        queryDate = `AND registrasi.tgl_masuk::date BETWEEN (now()::date - interval '30 days') AND now()::date`;
+        queryDate = `AND registrasi.tgl_masuk >= (now()::date - interval '3 days') AND registrasi.tgl_masuk < now()::date + interval '1 day'`;
         queryHasilRad = "";
         queryWhereTransaction = `AND tss_rad.transaction_satu_sehat_id is null`;
     }
@@ -93,7 +96,7 @@ const getDataServiceRequest = async (limit: string, hasil_rad_detail_id: string 
         limit ${parseInt(limit, 10)};
     `;
     const getDataPasienNew = await prismaDb1.$queryRawUnsafe(getDataPasien);
-    
+
     return getDataPasienNew;
 };
 
@@ -103,11 +106,11 @@ const updateInsertIdServiceRequestRepo = async (
     response: any,
     id: string,
     type: string,
-    gagal: number | null = null
+    gagal: number | null = null,
 ) => {
     const transaction_satu_sehatId = await generateMaxDb1(
         "max_transaction_satu_sehat_idx",
-        "transaction_satu_sehat_id"
+        "transaction_satu_sehat_id",
     );
     let data: any = {
         transaction_satu_sehat_id: transaction_satu_sehatId,
@@ -127,6 +130,86 @@ const updateInsertIdServiceRequestRepo = async (
     });
 };
 
+const getDataServiceRequestLab = async (
+    limit: string,
+    order_lab_detail_id: string = "",
+) => {
+    let queryOrderLab;
+    let queryDate;
+    let queryWhereTransaction;
+    if (order_lab_detail_id) {
+        queryDate = "";
+        queryOrderLab = `AND order_lab_detail.order_lab_detail_id = ${parseInt(
+            order_lab_detail_id,
+            10,
+        )}`;
+        queryWhereTransaction =
+            "AND (tss_servicerequestlab.transaction_satu_sehat_id is null or tss_servicerequestlab.key_satu_sehat = '0')";
+    } else {
+        queryDate = `AND registrasi.tgl_masuk >= (now()::date - interval '3 days') AND registrasi.tgl_masuk < now()::date + interval '1 day'`;
+        queryOrderLab = "";
+        queryWhereTransaction = `AND tss_servicerequestlab.transaction_satu_sehat_id is null`;
+    }
+    const getDataPasien = `select
+        registrasi.registrasi_id,
+        tss_encounter.key_satu_sehat encounter_id,
+        r_patient.key_satu_sehat patient_id,
+        order_lab_detail.order_lab_detail_id,
+        r_practitioner.key_satu_sehat practitioner_id,
+        users.nama_pegawai,
+        order_lab.tgl_order_lab,
+        tindakan.nama_tindakan,
+        tss_servicerequestlab.key_satu_sehat key_servicerequestlab,
+        r_performer_lab.key_satu_sehat practitioner_lab,
+        user_lab.nama_pegawai nama_petugas_lab,
+        order_lab.user_id_bridging,
+        tindakan_all_mapped.loinc,
+        tindakan_all_mapped.normalisasi
+    from
+        registrasi
+    inner join registrasi_detail on
+        registrasi.registrasi_id = registrasi_detail.registrasi_id
+    inner join transaction_satu_sehat tss_encounter on
+        registrasi.registrasi_id = tss_encounter.key_simrs
+        and tss_encounter.transaction_type = 'Encounter'
+    inner join order_lab on
+        registrasi_detail.registrasi_detail_id = order_lab.registrasi_detail_id
+    inner join order_lab_detail on
+        order_lab.order_lab_id = order_lab_detail.order_lab_id
+    inner join resources r_patient on
+        registrasi.pasien_id = r_patient.key_simrs
+        and r_patient.resources_type = 'Patient'
+    inner join users on
+        order_lab.kirim_user_id = users.user_id
+    inner join resources r_practitioner on
+        users.pegawai_id = r_practitioner.key_simrs
+        and r_practitioner.resources_type = 'Practitioner'
+    inner join tindakan on
+        order_lab_detail.tindakan_id = tindakan.tindakan_id
+    inner join users user_lab on 
+        order_lab.user_id_checkin = user_lab.user_id 
+    inner join resources r_performer_lab on
+        user_lab.user_id = r_performer_lab.key_simrs 
+        and r_performer_lab.resources_type = 'Practitioner'
+    inner join tindakan_all_mapped on
+        tindakan.tindakan_id = tindakan_all_mapped.tindakan_id
+        and tindakan_all_mapped.loinc is not null
+    left join transaction_satu_sehat tss_servicerequestlab on
+        order_lab_detail.order_lab_detail_id = tss_servicerequestlab.key_simrs
+        and tss_servicerequestlab.transaction_type = 'ServiceRequestLab'
+    where
+        registrasi.status_batal is null
+        and registrasi_detail.bagian_id in (240, 176)
+        ${queryWhereTransaction}
+        ${queryOrderLab}
+        ${queryDate}
+    limit ${parseInt(limit, 10)};
+    `;
+    const getDataPasienNew = await prismaDb1.$queryRawUnsafe(getDataPasien);
+
+    return getDataPasienNew;
+};
+
 const updateUpdateIdServiceRequestRepo = async (
     hasil_rad_detail_id: bigint,
     payload: any,
@@ -134,7 +217,7 @@ const updateUpdateIdServiceRequestRepo = async (
     id: string,
     type: string,
     gagal: number | null = null,
-    transaction_satu_sehat_id: number | null = null
+    transaction_satu_sehat_id: number | null = null,
 ) => {
     let data: any = {
         mod_time: dateNow(),
@@ -155,7 +238,7 @@ const updateUpdateIdServiceRequestRepo = async (
         where: {
             transaction_satu_sehat_id: parseInt(
                 data.transaction_satu_sehat_id,
-                10
+                10,
             ),
         },
         data,
@@ -166,4 +249,5 @@ export {
     getDataServiceRequest,
     updateInsertIdServiceRequestRepo,
     updateUpdateIdServiceRequestRepo,
+    getDataServiceRequestLab,
 };
