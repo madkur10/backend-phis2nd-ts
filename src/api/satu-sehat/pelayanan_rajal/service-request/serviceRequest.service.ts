@@ -2,6 +2,7 @@ import { environment } from "../../../../utils/config";
 import { checkTokenService } from "../../generate-token/generate-token.service";
 import {
     getDataServiceRequest,
+    getDataServiceRequestLab,
     updateInsertIdServiceRequestRepo,
     updateUpdateIdServiceRequestRepo,
 } from "./serviceRequest.repository";
@@ -12,7 +13,7 @@ import { format } from "date-fns-tz";
 const date = new Date();
 const timeZone: string = environment.timezone;
 const formattedUtcDate = new Date(
-    format(date, "yyyy-MM-dd HH:mm:ss", { timeZone }) + " UTC"
+    format(date, "yyyy-MM-dd HH:mm:ss", { timeZone }) + " UTC",
 );
 const baseUrl = environment.satusehat.url_base;
 const orgId = environment.satusehat.org_id;
@@ -97,7 +98,7 @@ const sendServRequestRadService = async (limit: string) => {
                     headersData,
                     url,
                     method,
-                    payload
+                    payload,
                 );
 
                 if (response.status === 201) {
@@ -107,7 +108,7 @@ const sendServRequestRadService = async (limit: string) => {
                             payload,
                             response.data,
                             response.data.id,
-                            response.data.resourceType
+                            response.data.resourceType,
                         );
                     resultPush.push({
                         ...element,
@@ -121,7 +122,7 @@ const sendServRequestRadService = async (limit: string) => {
                             response.data,
                             "0",
                             "ServiceRequest",
-                            1
+                            1,
                         );
 
                     resultPush.push({
@@ -130,7 +131,7 @@ const sendServRequestRadService = async (limit: string) => {
                         response: response.data,
                     });
                 }
-            }
+            },
         );
         await Promise.all(promises);
     }
@@ -147,7 +148,7 @@ const sendServRequestOrderRadService = async (hasil_rad_detail_id: string) => {
 
     const getDataServiceReady: any = await getDataServiceRequest(
         "1",
-        hasil_rad_detail_id
+        hasil_rad_detail_id,
     );
 
     const resultPush: any = [];
@@ -220,7 +221,7 @@ const sendServRequestOrderRadService = async (hasil_rad_detail_id: string) => {
                 headersData,
                 url,
                 method,
-                payload
+                payload,
             );
 
             if (response.status === 201) {
@@ -233,7 +234,7 @@ const sendServRequestOrderRadService = async (hasil_rad_detail_id: string) => {
                             response.data.id,
                             response.data.resourceType,
                             null,
-                            element.transaction_satu_sehat_id
+                            element.transaction_satu_sehat_id,
                         );
                     resultPush.push({
                         ...element,
@@ -246,7 +247,7 @@ const sendServRequestOrderRadService = async (hasil_rad_detail_id: string) => {
                             payload,
                             response.data,
                             response.data.id,
-                            response.data.resourceType
+                            response.data.resourceType,
                         );
                     resultPush.push({
                         ...element,
@@ -263,7 +264,7 @@ const sendServRequestOrderRadService = async (hasil_rad_detail_id: string) => {
                             "0",
                             "ServiceRequest",
                             1,
-                            element.transaction_satu_sehat_id
+                            element.transaction_satu_sehat_id,
                         );
                     resultPush.push({
                         ...element,
@@ -277,7 +278,7 @@ const sendServRequestOrderRadService = async (hasil_rad_detail_id: string) => {
                             response.data,
                             "0",
                             "ServiceRequest",
-                            1
+                            1,
                         );
 
                     resultPush.push({
@@ -294,4 +295,243 @@ const sendServRequestOrderRadService = async (hasil_rad_detail_id: string) => {
     return resultPush;
 };
 
-export { sendServRequestRadService, sendServRequestOrderRadService };
+const sendServRequestLabService = async (limit: string) => {
+    const tokenService = await checkTokenService();
+    if (tokenService?.code !== 200) {
+        throw new Error("Generate Token Failed");
+    }
+    let token = tokenService?.data?.access_token;
+
+    const getDataServiceRequestReady: any =
+        await getDataServiceRequestLab(limit);
+
+    const resultPush: any = [];
+    if (getDataServiceRequestReady.length > 0) {
+        const promises = getDataServiceRequestReady.map(
+            async (element: any) => {
+                const headersData = {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                };
+                const url = `${baseUrl}/ServiceRequest`;
+                const method = "POST";
+                const tglLayanan = element.tgl_order_lab;
+
+                const payload = {
+                    resourceType: "ServiceRequest",
+                    status: "completed",
+                    identifier: [
+                        {
+                            system: `http://sys-ids.kemkes.go.id/servicerequest/${orgId}`,
+                            value: element.order_lab_detail_id.toString(),
+                        },
+                    ],
+                    intent: "order",
+                    category: [
+                        {
+                            coding: [
+                                {
+                                    system: "http://snomed.info/sct",
+                                    code: "108252007",
+                                    display: "Laboratory procedure",
+                                },
+                            ],
+                        },
+                    ],
+                    code: {
+                        coding: [
+                            {
+                                system: "http://loinc.org",
+                                code: element.kode_loinc_order,
+                                display: element.txt_loinc_order,
+                            },
+                        ],
+                        text: element.nama_tindakan,
+                    },
+                    subject: {
+                        reference: `Patient/${element.patient_id}`,
+                    },
+                    encounter: {
+                        reference: `Encounter/${element.encounter_id}`,
+                    },
+                    requester: {
+                        reference: `Practitioner/${element.practitioner_id}`,
+                    },
+                    performer: [
+                        {
+                            reference: `Practitioner/${element.practitioner_lab}`,
+                            display: element.nama_petugas_lab,
+                        },
+                    ],
+                    authoredOn: tglLayanan,
+                };
+
+                const response: any = await requestAxios(
+                    headersData,
+                    url,
+                    method,
+                    payload,
+                );
+
+                if (response.status === 201) {
+                    const updateInsertIdPatient =
+                        updateInsertIdServiceRequestRepo(
+                            element.order_lab_detail_id,
+                            payload,
+                            response.data,
+                            response.data.id,
+                            response.data.resourceType + "Lab",
+                        );
+                    resultPush.push({
+                        ...element,
+                        status: "sukses",
+                    });
+                } else {
+                    const updateInsertIdPatient =
+                        updateInsertIdServiceRequestRepo(
+                            element.order_lab_detail_id,
+                            payload,
+                            response.data,
+                            "0",
+                            "ServiceRequestLab",
+                            1,
+                        );
+
+                    resultPush.push({
+                        ...element,
+                        status: "gagal",
+                        response: response.data,
+                    });
+                }
+            },
+        );
+        await Promise.all(promises);
+    }
+
+    return resultPush;
+};
+
+const sendServRequestLabOrderLabService = async (order_detail_lab_id: string) => {
+    const tokenService = await checkTokenService();
+    if (tokenService?.code !== 200) {
+        throw new Error("Generate Token Failed");
+    }
+    let token = tokenService?.data?.access_token;
+
+    const getDataServiceRequestReady: any = await getDataServiceRequestLab(
+        "1",
+        order_detail_lab_id,
+    );
+
+    const resultPush: any = [];
+    if (getDataServiceRequestReady.length > 0) {
+        const promises = getDataServiceRequestReady.map(
+            async (element: any) => {
+                const headersData = {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                };
+                const url = `${baseUrl}/ServiceRequest`;
+                const method = "POST";
+                const tglLayanan = element.tgl_order_lab;
+
+                const payload = {
+                    resourceType: "ServiceRequest",
+                    status: "completed",
+                    identifier: [
+                        {
+                            system: `http://sys-ids.kemkes.go.id/servicerequest/${orgId}`,
+                            value: element.order_lab_detail_id.toString(),
+                        },
+                    ],
+                    intent: "order",
+                    category: [
+                        {
+                            coding: [
+                                {
+                                    system: "http://snomed.info/sct",
+                                    code: "108252007",
+                                    display: "Laboratory procedure",
+                                },
+                            ],
+                        },
+                    ],
+                    code: {
+                        coding: [
+                            {
+                                system: "http://loinc.org",
+                                code: element.kode_loinc_order,
+                                display: element.txt_loinc_order,
+                            },
+                        ],
+                        text: element.nama_tindakan,
+                    },
+                    subject: {
+                        reference: `Patient/${element.patient_id}`,
+                    },
+                    encounter: {
+                        reference: `Encounter/${element.encounter_id}`,
+                    },
+                    requester: {
+                        reference: `Practitioner/${element.practitioner_id}`,
+                    },
+                    performer: [
+                        {
+                            reference: `Practitioner/${element.practitioner_lab}`,
+                            display: element.nama_petugas_lab,
+                        },
+                    ],
+                    authoredOn: tglLayanan,
+                };
+
+                const response: any = await requestAxios(
+                    headersData,
+                    url,
+                    method,
+                    payload,
+                );
+
+                if (response.status === 201) {
+                    const updateInsertIdPatient =
+                        updateInsertIdServiceRequestRepo(
+                            element.order_lab_detail_id,
+                            payload,
+                            response.data,
+                            response.data.id,
+                            response.data.resourceType + "Lab",
+                        );
+                    resultPush.push({
+                        ...element,
+                        status: "sukses",
+                    });
+                } else {
+                    const updateInsertIdPatient =
+                        updateInsertIdServiceRequestRepo(
+                            element.order_lab_detail_id,
+                            payload,
+                            response.data,
+                            "0",
+                            "ServiceRequestLab",
+                            1,
+                        );
+
+                    resultPush.push({
+                        ...element,
+                        status: "gagal",
+                        response: response.data,
+                    });
+                }
+            },
+        );
+        await Promise.all(promises);
+    }
+
+    return resultPush;
+};
+
+export {
+    sendServRequestRadService,
+    sendServRequestOrderRadService,
+    sendServRequestLabService,
+    sendServRequestLabOrderLabService,
+};

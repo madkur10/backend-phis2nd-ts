@@ -1,8 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
 import {
-    createJobPasien,
-    pushJobService,
-    createJobPractitioner,
     getPatientNikService,
     getPatientSendAllService,
     getPractitionerNikService,
@@ -14,101 +11,11 @@ import {
     getLocationIdService,
     getResourcesKfaService,
     createLocationBedService,
+    createPatientService,
 } from "./resources.service";
 import { body, param, validationResult } from "express-validator";
 
 export const router = Router();
-
-router.get(
-    "/create-job-pasien/:limit",
-    async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const limit: number = parseInt(req.params.limit, 10);
-            const statusAntrean = await createJobPasien(limit);
-
-            if (statusAntrean) {
-                res.send({
-                    response: statusAntrean.data,
-                    metadata: {
-                        message: statusAntrean.message,
-                        code: statusAntrean.code,
-                    },
-                });
-            } else {
-                res.status(200).json({
-                    response: "",
-                    metadata: {
-                        message: "Gagal",
-                        code: 201,
-                    },
-                });
-            }
-        } catch (err) {
-            next(err);
-        }
-    }
-);
-
-router.get(
-    "/create-job-practitioner/:limit",
-    async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const limit: number = parseInt(req.params.limit, 10);
-            const statusAntrean = await createJobPractitioner(limit);
-
-            if (statusAntrean) {
-                res.send({
-                    response: statusAntrean.data,
-                    metadata: {
-                        message: statusAntrean.message,
-                        code: statusAntrean.code,
-                    },
-                });
-            } else {
-                res.status(200).json({
-                    response: "",
-                    metadata: {
-                        message: "Gagal",
-                        code: 201,
-                    },
-                });
-            }
-        } catch (err) {
-            next(err);
-        }
-    }
-);
-
-router.get(
-    "/push-job/:nama_endpoint/:limit",
-    async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const limit: number = parseInt(req.params.limit, 10);
-            const nama_endpoint = req.params.nama_endpoint;
-            const pushJob = await pushJobService(nama_endpoint, limit);
-
-            if (pushJob) {
-                res.send({
-                    response: pushJob.data,
-                    metadata: {
-                        message: pushJob.message,
-                        code: pushJob.code,
-                    },
-                });
-            } else {
-                res.status(200).json({
-                    response: "",
-                    metadata: {
-                        message: "Gagal",
-                        code: 201,
-                    },
-                });
-            }
-        } catch (err) {
-            next(err);
-        }
-    }
-);
 
 router.get(
     "/patient/nik/:nik",
@@ -624,6 +531,40 @@ router.get(
                     response: resourcesKfa.data,
                 });
             }
+        } catch (err) {
+            next(err);
+        }
+    }
+);
+
+router.post(
+    "/patient-bayi",
+    body(["pasien_id", "nik"]).notEmpty().isString(),
+    async (req: Request, res: Response, next: NextFunction) => {
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            res.status(201).send({
+                response: errors.array(),
+                metadata: {
+                    code: 400,
+                    message: "Validation error",
+                },
+            });
+            return;
+        }
+
+        try {
+            const data = req.body;
+            const createPatient = await createPatientService(data);
+
+            res.status(200).json({
+                metadata: {
+                    code: 200,
+                    msg: "Pengerjaan Selesai!",
+                },
+                response: createPatient,
+            });
         } catch (err) {
             next(err);
         }

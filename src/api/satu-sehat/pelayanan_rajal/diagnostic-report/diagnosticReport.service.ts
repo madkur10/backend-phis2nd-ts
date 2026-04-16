@@ -46,7 +46,7 @@ const sendDiagnosticReportService = async (limit: string) => {
                         {
                             system: `http://sys-ids.kemkes.go.id/diagnostic/${orgId}/rad`,
                             use: "official",
-                            value: element.hasil_rad_id.toString(),
+                            value: element.hasil_rad_detail_id.toString(),
                         },
                     ],
                     status: "final",
@@ -115,7 +115,7 @@ const sendDiagnosticReportService = async (limit: string) => {
                 if (response.status === 201) {
                     const updateInsertIdPatient =
                         updateInsertIdDiagnosticReportRepo(
-                            element.hasil_rad_id,
+                            element.hasil_rad_detail_id,
                             payload,
                             response.data,
                             response.data.id,
@@ -128,7 +128,7 @@ const sendDiagnosticReportService = async (limit: string) => {
                 } else {
                     const updateInsertIdPatient =
                         updateInsertIdDiagnosticReportRepo(
-                            element.hasil_rad_id,
+                            element.hasil_rad_detail_id,
                             payload,
                             response.data,
                             "0",

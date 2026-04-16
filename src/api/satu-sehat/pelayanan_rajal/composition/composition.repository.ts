@@ -1,82 +1,88 @@
 import { parse } from "path";
-import { prismaDb1, prismaDb2, prismaDb3 } from "./../../../../db";
+import { prismaDb1, prismaDb2, prismaDb3 } from "../../../../db";
 import {
     generateMaxDb1,
     generateMaxDb2,
     selectFieldDb2,
     timeHandler,
-} from "./../../../../db/database.handler";
-import { dateNow } from "./../../../../middlewares/time";
+} from "../../../../db/database.handler";
+import { dateNow } from "../../../../middlewares/time";
 
-const getDataCondition = async (limit: string, emr_detail_id: string = "") => {
-    let queryEmrDetail;
+const getDataCompositionDiit = async (
+    limit: string,
+    emr_detail_id: string = "",
+) => {
+    let queryCompositionDiit;
     let queryDate;
     let queryWhereTransaction;
     if (emr_detail_id) {
         queryDate = "";
-        queryEmrDetail = `AND emr_detail.emr_detail_id = ${parseInt(
+        queryCompositionDiit = `AND emr_detail.emr_detail_id = ${parseInt(
             emr_detail_id,
-            10
+            10,
         )}`;
-
         queryWhereTransaction =
-            "AND (tss_condition.transaction_satu_sehat_id is null or tss_condition.key_satu_sehat = '0')";
+            "AND (tss_diit.transaction_satu_sehat_id is null or tss_diit.key_satu_sehat = '0')";
     } else {
         queryDate = `AND registrasi.tgl_masuk >= (now()::date - interval '3 days') AND registrasi.tgl_masuk < now()::date + interval '1 day'`;
-        queryEmrDetail = "";
-        queryWhereTransaction = `AND tss_condition.transaction_satu_sehat_id is null`;
+        queryCompositionDiit = "";
+        queryWhereTransaction = `AND tss_diit.transaction_satu_sehat_id is null`;
     }
+
     const getDataPasien = `select
-            registrasi.registrasi_id Registration_ID,
+            registrasi.registrasi_id,
             registrasi.tgl_masuk,
-            pasien.nama_pasien Patient_Name,
-            resources_patient.key_satu_sehat Patient_ID,
+            pasien.nama_pasien,
+            tss_encounter.key_satu_sehat encounter_id,
+            r_patient.key_satu_sehat patient_id,
+            r_location.key_satu_sehat location_id,
             bagian.nama_bagian,
-            tss_encounter.key_satu_sehat Encounter_ID,
-            emr_detail.emr_detail_id,
-            emr_detail.objek_id,
-            emr_detail.input_time input_time_emr,
+            r_practitioner.key_satu_sehat practitioner_id,
+            pegawai.nama_pegawai,
             emr_detail.value,
-            icd.kode_diagnosa,
-            icd.nama_diagnosa,
-            tss_condition.transaction_satu_sehat_id
-        from
+            emr_detail.emr_detail_id,
+            tss_diit.transaction_satu_sehat_id tss_id_comp_diit
+        from 
             registrasi
         inner join registrasi_detail on
             registrasi.registrasi_id = registrasi_detail.registrasi_id
             and registrasi_detail.status_batal is null
-        inner join bagian on
-            registrasi_detail.bagian_id = bagian.bagian_id
-            and bagian.referensi_bagian in (1, 313)
+        inner join registrasi_urut on
+            registrasi_detail.registrasi_detail_id = registrasi_urut.registrasi_detail_id
+        inner join pegawai on
+            registrasi_urut.pegawai_id = pegawai.pegawai_id
         inner join pasien on
             registrasi.pasien_id = pasien.pasien_id
-        inner join resources resources_patient on
-            pasien.pasien_id = resources_patient.key_simrs
-            and resources_patient.resources_type = 'Patient'
-            and resources_patient.key_satu_sehat <> '0'
+        inner join bagian on
+            registrasi_detail.bagian_id = bagian.bagian_id
+            and bagian.bagian_id in (61, 40)
+        inner join transaction_satu_sehat tss_encounter on
+            registrasi.registrasi_id = tss_encounter.key_simrs
+            and tss_encounter.key_satu_sehat <> '0'
+            and tss_encounter.transaction_type = 'Encounter'
+        inner join resources r_patient on
+            pasien.pasien_id = r_patient.key_simrs
+            and r_patient.resources_type = 'Patient'
+        inner join resources r_location on 
+            bagian.bagian_id = r_location.key_simrs
+            and r_location.resources_type = 'Location'
+        inner join resources r_practitioner on
+            registrasi_urut.pegawai_id = r_practitioner.key_simrs
+            and r_practitioner.resources_type = 'Practitioner'
         inner join emr on
             registrasi.registrasi_id = emr.registrasi_id
-            and emr.status_batal is null
             and emr.form_id = 3
         inner join emr_detail on
             emr.emr_id = emr_detail.emr_id
-            and emr_detail.variabel = 'primary'
-            and emr_detail.objek_id in (42)
-            and emr_detail.status_batal is null
-        inner join transaction_satu_sehat tss_encounter on
-            registrasi.registrasi_id = tss_encounter.key_simrs
-            and tss_encounter.transaction_type = 'Encounter'
-        inner join icd on
-            emr_detail.value::int = icd.icd_id
-        left outer join transaction_satu_sehat tss_condition on
-            emr_detail.emr_detail_id = tss_condition.key_simrs
-            and tss_condition.transaction_type = 'Condition' 
-        where 
+            and emr_detail.objek_id = 4
+        left join transaction_satu_sehat tss_diit on
+            emr_detail.emr_detail_id = tss_diit.key_simrs 
+            and tss_diit.transaction_type = 'CompositionDiit'
+        where
             registrasi.status_batal is null
-            and tss_encounter.key_satu_sehat is not null
-            ${queryEmrDetail}
-            ${queryDate}
             ${queryWhereTransaction}
+            ${queryCompositionDiit}
+            ${queryDate}
         limit ${parseInt(limit, 10)};
     `;
     const getDataPasienNew = await prismaDb1.$queryRawUnsafe(getDataPasien);
@@ -84,17 +90,17 @@ const getDataCondition = async (limit: string, emr_detail_id: string = "") => {
     return getDataPasienNew;
 };
 
-const updateInsertIdConditionRepo = async (
+const updateInsertIdCompositionRepo = async (
     emr_detail_id: bigint,
     payload: any,
     response: any,
     id: string,
     type: string,
-    gagal: number | null = null
+    gagal: number | null = null,
 ) => {
     const transaction_satu_sehatId = await generateMaxDb1(
         "max_transaction_satu_sehat_idx",
-        "transaction_satu_sehat_id"
+        "transaction_satu_sehat_id",
     );
     let data: any = {
         transaction_satu_sehat_id: transaction_satu_sehatId,
@@ -114,14 +120,14 @@ const updateInsertIdConditionRepo = async (
     });
 };
 
-const updateUpdateIdConditionRepo = async (
+const updateUpdateIdCompositionRepo = async (
     emr_detail_id: bigint,
     payload: any,
     response: any,
     id: string,
     type: string,
     gagal: number | null = null,
-    transaction_satu_sehat_id: number | null = null
+    transaction_satu_sehat_id: number | null = null,
 ) => {
     let data: any = {
         mod_time: dateNow(),
@@ -142,7 +148,7 @@ const updateUpdateIdConditionRepo = async (
         where: {
             transaction_satu_sehat_id: parseInt(
                 data.transaction_satu_sehat_id,
-                10
+                10,
             ),
         },
         data,
@@ -150,7 +156,7 @@ const updateUpdateIdConditionRepo = async (
 };
 
 export {
-    getDataCondition,
-    updateInsertIdConditionRepo,
-    updateUpdateIdConditionRepo,
+    getDataCompositionDiit,
+    updateInsertIdCompositionRepo,
+    updateUpdateIdCompositionRepo,
 };

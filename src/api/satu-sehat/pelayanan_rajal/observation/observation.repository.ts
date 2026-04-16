@@ -25,7 +25,7 @@ const getDataObservation = async (
         queryWhereTransaction =
             "AND (transaction_satu_sehat_observation.transaction_satu_sehat_id is null or transaction_satu_sehat_observation.key_satu_sehat = '0')";
     } else {
-        queryDate = ` AND registrasi.tgl_masuk >= (NOW()::date - INTERVAL '7 day') AND registrasi.tgl_masuk < (NOW()::date + INTERVAL '1 day')`;
+        queryDate = `AND registrasi.tgl_masuk >= (now()::date - interval '3 days') AND registrasi.tgl_masuk < now()::date + interval '1 day'`;
         queryEmrDetail = "";
         queryWhereTransaction = `AND transaction_satu_sehat_observation.transaction_satu_sehat_id is null`;
     }
@@ -116,7 +116,7 @@ const getDataObservationRad = async (
         queryWhereTransaction =
             "AND (tss_observation_rad.transaction_satu_sehat_id is null or tss_observation_rad.key_satu_sehat = '0')";
     } else {
-        queryDate = ` AND registrasi.tgl_masuk >= (NOW()::date - INTERVAL '7 day') AND registrasi.tgl_masuk < (NOW()::date + INTERVAL '1 day')`;
+        queryDate = `AND registrasi.tgl_masuk >= (now()::date - interval '3 days') AND registrasi.tgl_masuk < now()::date + interval '1 day'`;
         queryHasilRad = "";
         queryWhereTransaction = `AND tss_observation_rad.transaction_satu_sehat_id is null`;
     }

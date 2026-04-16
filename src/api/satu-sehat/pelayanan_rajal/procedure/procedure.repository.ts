@@ -22,7 +22,7 @@ const getProcedureRadRequest = async (limit: string, hasil_rad_detail_id: string
         queryWhereTransaction =
             "AND (tss_procedure_rad.transaction_satu_sehat_id is null or tss_procedure_rad.key_satu_sehat = '0')";
     } else {
-        queryDate = `AND registrasi.tgl_masuk::date BETWEEN (now()::date - interval '14 days') AND (now()::date - interval '7 days')`;
+        queryDate = `AND registrasi.tgl_masuk >= (now()::date - interval '3 days') AND registrasi.tgl_masuk < now()::date + interval '1 day'`;
         queryRegistrasiId = "";
         queryWhereTransaction = `AND tss_procedure_rad.transaction_satu_sehat_id is null`;
     }

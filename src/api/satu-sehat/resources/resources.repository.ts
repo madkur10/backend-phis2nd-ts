@@ -286,11 +286,11 @@ const updateInsertIdPractitionerRepo = async (
     pegawai_id: number,
     response: any,
     id: string,
-    type: string
+    type: string,
 ) => {
     const resourcesId = await generateMaxDb1(
         "max_resources_idx",
-        "resources_id"
+        "resources_id",
     );
     const insertRujukan = await prismaDb1.resources.create({
         data: {
@@ -326,21 +326,41 @@ const getDataPatient = async (limit: string) => {
     return getDataPasien;
 };
 
+const getDataPasien = async (pasien_id: string) => {
+    const getDataPasien = await prismaDb1.pasien.findUnique({
+        where: {
+            pasien_id: parseInt(pasien_id, 10),
+        },
+        select: {
+            pasien_id: true,
+            no_mr: true,
+            nama_pasien: true,
+            ktp: true,
+            tgl_lahir: true,
+            jenis_kelamin: true,
+        },
+    });
+
+    return getDataPasien;
+};
+
 const updateInsertIdPatientRepo = async (
     pasien_id: number,
+    payload: any,
     response: any,
     id: string,
     type: string,
-    gagal: number | null = null
+    gagal: number | null = null,
 ) => {
     const resourcesId = await generateMaxDb1(
         "max_resources_idx",
-        "resources_id"
+        "resources_id",
     );
     let data: any = {
         resources_id: resourcesId,
         input_time: dateNow(),
         input_user_id: 1,
+        payload: payload,
         key_simrs: pasien_id,
         key_satu_sehat: id,
         resources_type: type,
@@ -373,4 +393,5 @@ export {
     getDataPatient,
     updateInsertIdPatientRepo,
     getDataKfa,
+    getDataPasien,
 };
