@@ -9,6 +9,7 @@ import {
     updateTaskRujukBedaPoli,
     updateTaskPoliSesuai,
 } from "./antrolAuto.service";
+import { getCronStatus, setCronStatus } from "./antrolAuto.cron";
 
 export const router = Router();
 
@@ -247,6 +248,42 @@ router.get("/insert-task-nol/:limit/tglawal/:tglawal/tglakhir/:tglakhir", async 
                 },
             });
         }
+    } catch (error: any) {
+        next(error.message.replace(/\n/g, " "));
+    }
+})
+
+router.get("/cron/status", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        res.status(200).json({
+            metadata: {
+                code: 200,
+                msg: "Cron status retrieved successfully",
+            },
+            response: {
+                enabled: getCronStatus(),
+            },
+        });
+    } catch (error: any) {
+        next(error.message.replace(/\n/g, " "));
+    }
+})
+
+router.get("/cron/toggle", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const enable = req.query.enable === "true";
+        setCronStatus(enable);
+        
+        res.status(200).json({
+            metadata: {
+                code: 200,
+                msg: `Cron status successfully updated to ${enable ? "ON" : "OFF"}`,
+            },
+            response: {
+                enabled: getCronStatus(),
+            },
+        });
+        console.log(`[CRON CONFIG] Status cron job internal diubah menjadi: ${enable ? "AKTIF" : "NONAKTIF"}`);
     } catch (error: any) {
         next(error.message.replace(/\n/g, " "));
     }

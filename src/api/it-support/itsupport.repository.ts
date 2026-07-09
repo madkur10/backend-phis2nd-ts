@@ -4,7 +4,6 @@ import { Prisma } from "@prisma/client";
 import {
     generateMaxDb1,
     generateMaxDb4,
-    selectFieldDb1,
     timeHandler,
 } from "../../db/database.handler";
 import { dateNow } from "../../middlewares/time";
@@ -12,31 +11,40 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 const getDashboardRepo = async (start_date?: string, end_date?: string) => {
-    let dateCondition;
-
+    let getDashboardResult: any;
     if (start_date && end_date) {
-        dateCondition = ` BETWEEN '${start_date}' AND '${end_date}'`;
+        getDashboardResult = await prismaDb4.$queryRaw`
+            SELECT 
+                COUNT(*) as total_ticket,
+                COUNT(*) FILTER (WHERE status = 'Open') as total_open,
+                COUNT(*) FILTER (WHERE status = 'In Progress') as total_progress,
+                COUNT(*) FILTER (WHERE status = 'Resolved') as total_resolved,
+                COUNT(*) FILTER (WHERE status = 'Closed') as total_closed,
+                COUNT(*) FILTER (
+                    WHERE status NOT IN ('Resolved', 'Closed') 
+                    AND created_at < NOW() - INTERVAL '2 hours'
+                ) as total_overdue
+            FROM 
+                tickets
+            WHERE 
+                created_at::date BETWEEN ${start_date}::date AND ${end_date}::date;`;
     } else {
-        dateCondition = ` = NOW()::date`;
+        getDashboardResult = await prismaDb4.$queryRaw`
+            SELECT 
+                COUNT(*) as total_ticket,
+                COUNT(*) FILTER (WHERE status = 'Open') as total_open,
+                COUNT(*) FILTER (WHERE status = 'In Progress') as total_progress,
+                COUNT(*) FILTER (WHERE status = 'Resolved') as total_resolved,
+                COUNT(*) FILTER (WHERE status = 'Closed') as total_closed,
+                COUNT(*) FILTER (
+                    WHERE status NOT IN ('Resolved', 'Closed') 
+                    AND created_at < NOW() - INTERVAL '2 hours'
+                ) as total_overdue
+            FROM 
+                tickets
+            WHERE 
+                created_at::date = NOW()::date;`;
     }
-
-    const getDashboard = `
-        SELECT 
-            COUNT(*) as total_ticket,
-            COUNT(*) FILTER (WHERE status = 'Open') as total_open,
-            COUNT(*) FILTER (WHERE status = 'In Progress') as total_progress,
-            COUNT(*) FILTER (WHERE status = 'Resolved') as total_resolved,
-            COUNT(*) FILTER (WHERE status = 'Closed') as total_closed,
-            COUNT(*) FILTER (
-                WHERE status NOT IN ('Resolved', 'Closed') 
-                AND created_at < NOW() - INTERVAL '2 hours'
-            ) as total_overdue
-        FROM 
-            tickets
-        WHERE 
-            created_at::date ${dateCondition};`;
-    
-    const getDashboardResult: any = await prismaDb4.$queryRawUnsafe(getDashboard);
 
     return getDashboardResult;
 };
@@ -48,31 +56,33 @@ const getListTicketsRepo = async (
     start_date?: string,
     end_date?: string,
 ) => {
+    const queryParams: any[] = [];
+    let paramIndex = 1;
+
     let queryConditionBagian = "";
-    let queryConditionTicket = "";
-    let queryConditionDashboard = "";
-    let queryConditionDate = "";
-
     if (bagian_id) {
-        queryConditionBagian = ` and t.department_id = ${bagian_id}`;
-    } else {
-        queryConditionBagian = "";
+        queryConditionBagian = ` and t.department_id = $${paramIndex++}`;
+        queryParams.push(bagian_id);
     }
 
+    let queryConditionTicket = "";
     if (ticket_id) {
-        queryConditionTicket = ` and t.id = ${ticket_id}`;
-    } else {
-        queryConditionTicket = "";
+        queryConditionTicket = ` and t.id = $${paramIndex++}`;
+        queryParams.push(ticket_id);
     }
 
+    let queryConditionDashboard = "";
     if (list_dashboard || ticket_id) {
         queryConditionDashboard = "";
     } else {
         queryConditionDashboard = ` and t.status not in ('Closed', 'Resolved')`;
     }
 
-    if (start_date || end_date) {
-        queryConditionDate = ` and t.created_at::date between '${start_date}' and '${end_date}'`;
+    let queryConditionDate = "";
+    if (start_date && end_date) {
+        queryConditionDate = ` and t.created_at::date between $${paramIndex++}::date and $${paramIndex++}::date`;
+        queryParams.push(start_date);
+        queryParams.push(end_date);
     } else {
         queryConditionDate = " and t.created_at::date = now()::date";
     }
@@ -126,38 +136,24 @@ const getListTicketsRepo = async (
     `;
 
     const getListTicketsResult: any =
-        await prismaDb4.$queryRawUnsafe(getListTickets);
+        await prismaDb4.$queryRawUnsafe(getListTickets, ...queryParams);
     if (getListTicketsResult.length > 0) {
         for (let i = 0; i < getListTicketsResult.length; i++) {
-            getListTicketsResult[i].nama_pegawai = await selectFieldDb1(
-                "users",
-                "nama_pegawai",
-                "WHERE user_id = '" + getListTicketsResult[i].user_id + "'",
-            );
+            const userId = parseInt(getListTicketsResult[i].user_id, 10);
+            const deptId = parseInt(getListTicketsResult[i].department_id, 10);
 
-            getListTicketsResult[i].nama_bagian = await selectFieldDb1(
-                "bagian",
-                "nama_bagian",
-                "WHERE bagian_id = '" +
-                    getListTicketsResult[i].department_id +
-                    "'",
-            );
+            getListTicketsResult[i].nama_pegawai = isNaN(userId) ? null : await getNamaPegawaiRepo(userId);
+            getListTicketsResult[i].nama_bagian = isNaN(deptId) ? null : await getNamaBagianRepo(deptId);
 
-            if (getListTicketsResult[i].ticket_log[0].user_id_petugas) {
+            if (getListTicketsResult[i].ticket_log[0] && getListTicketsResult[i].ticket_log[0].user_id_petugas) {
                 for (
                     let j = 0;
                     j < getListTicketsResult[i].ticket_log.length;
                     j++
                 ) {
-                    getListTicketsResult[i].ticket_log[j].nama_pegawai =
-                        await selectFieldDb1(
-                            "users",
-                            "nama_pegawai",
-                            "WHERE user_id = '" +
-                                getListTicketsResult[i].ticket_log[j]
-                                    .user_id_petugas +
-                                "'",
-                        );
+                    const petugasId = parseInt(getListTicketsResult[i].ticket_log[j].user_id_petugas, 10);
+                    getListTicketsResult[i].ticket_log[j].nama_pegawai = isNaN(petugasId) ? null :
+                        await getNamaPegawaiRepo(petugasId);
                 }
             }
         }
@@ -331,23 +327,30 @@ const getUnreadCountRepo = async (
     bagian_id_ticket?: number,
     it_support?: boolean,
 ) => {
+    const queryParams: any[] = [];
+    let paramIndex = 1;
+
     let queryConditionTicket = "";
-    let queryConditionBagianTicket = "";
     if (ticket_id) {
-        queryConditionTicket = ` and t.id = ${ticket_id}`;
-    } else {
-        queryConditionTicket = "";
+        queryConditionTicket = ` and t.id = $${paramIndex++}`;
+        queryParams.push(ticket_id);
     }
 
+    let queryConditionBagianTicket = "";
     if (it_support) {
         queryConditionBagianTicket = ``;
     } else {
         if (bagian_id_ticket) {
-            queryConditionBagianTicket = ` and t.department_id = ${bagian_id_ticket}`;
+            queryConditionBagianTicket = ` and t.department_id = $${paramIndex++}`;
+            queryParams.push(bagian_id_ticket);
         } else {
-            queryConditionBagianTicket = ` and t.department_id = ${bagian_id}`;
+            queryConditionBagianTicket = ` and t.department_id = $${paramIndex++}`;
+            queryParams.push(bagian_id);
         }
     }
+
+    const queryBagianIdParam = `$${paramIndex++}`;
+    queryParams.push(bagian_id);
 
     const getListTickets = `
         SELECT
@@ -360,13 +363,13 @@ const getUnreadCountRepo = async (
             tc.is_read = false
             AND t.created_at::date = NOW()::date
             AND t.status NOT IN ('Closed', 'Resolved')
-            AND tc.department_id != ${bagian_id}
+            AND tc.department_id != ${queryBagianIdParam}
             ${queryConditionBagianTicket}
             ${queryConditionTicket}
     `;
 
     const getListTicketsResult: any =
-        await prismaDb4.$queryRawUnsafe(getListTickets);
+        await prismaDb4.$queryRawUnsafe(getListTickets, ...queryParams);
 
     return getListTicketsResult[0].count;
 };

@@ -1,7 +1,6 @@
 import { prismaDb1 } from "./../../../db";
 import {
     generateMaxDb1,
-    selectFieldDb1,
     timeHandler,
 } from "./../../../db/database.handler";
 import { dateNow } from "./../../../middlewares/time";
@@ -428,13 +427,16 @@ const insertPendaftaranService = async (data: any) => {
         "max_registrasi_urut_idx",
         "registrasi_urut_id",
     );
-    const pegawaiId = await selectFieldDb1(
-        "users",
-        "pegawai_id",
-        `where 
-            status_batal is null 
-            and user_id = ${data.data.dokter_id}`,
-    );
+    const user = await prismaDb1.users.findFirst({
+        where: {
+            user_id: data.data.dokter_id,
+            status_batal: null,
+        },
+        select: {
+            pegawai_id: true,
+        },
+    });
+    const pegawaiId = user?.pegawai_id;
     let antrian_rj, addminute;
 
     const rangeAntrianRJ: any = process.env.rangeAntrianRJ;
@@ -453,24 +455,20 @@ const insertPendaftaranService = async (data: any) => {
     }
 
     const hari = new Date(data.data.tanggalperiksa).getDay();
-    let jam_mulai = await selectFieldDb1(
-        "jadwal_dokter",
-        "waktu_mulai",
-        `where 
-            bagian_id = ${data.data.bagian_id} 
-            and pegawai_id = ${pegawaiId}
-            and hari = ${hari}
-            and status_batal is null`,
-    );
-    let jam_selesai = await selectFieldDb1(
-        "jadwal_dokter",
-        "waktu_selesai",
-        `where 
-            bagian_id = ${data.data.bagian_id} 
-            and pegawai_id = ${pegawaiId}
-            and hari = ${hari}
-            and status_batal is null`,
-    );
+    const jadwal = pegawaiId ? await prismaDb1.jadwal_dokter.findFirst({
+        where: {
+            bagian_id: data.data.bagian_id,
+            pegawai_id: pegawaiId,
+            hari: hari,
+            status_batal: null,
+        },
+        select: {
+            waktu_mulai: true,
+            waktu_selesai: true,
+        },
+    }) : null;
+    let jam_mulai: any = jadwal?.waktu_mulai || null;
+    let jam_selesai: any = jadwal?.waktu_selesai || null;
     jam_mulai = await timeHandler(jam_mulai);
     jam_selesai = await timeHandler(jam_selesai);
 
@@ -605,17 +603,17 @@ const insertPendaftaranService = async (data: any) => {
         });
     }
 
-    const namaDPJP = await selectFieldDb1(
-        "users",
-        "nama_pegawai",
-        `where user_id = ${data.data.dokter_id}`,
-    );
+    const userDb = await prismaDb1.users.findUnique({
+        where: { user_id: data.data.dokter_id },
+        select: { nama_pegawai: true },
+    });
+    const namaDPJP = userDb?.nama_pegawai || null;
 
-    const namaBagian = await selectFieldDb1(
-        "bagian",
-        "nama_bagian",
-        `where bagian_id = ${data.data.bagian_id}`,
-    );
+    const bagianDb = await prismaDb1.bagian.findUnique({
+        where: { bagian_id: data.data.bagian_id },
+        select: { nama_bagian: true },
+    });
+    const namaBagian = bagianDb?.nama_bagian || null;
 
     const sevenHoursInMilliseconds = 7 * 60 * 60 * 1000;
     const adjustedTime = Math.floor(
@@ -696,11 +694,16 @@ const batalDataAntrean = async (data: any) => {
         },
     });
 
-    const registrasiDetailId = await selectFieldDb1(
-        "registrasi_detail",
-        "registrasi_detail_id",
-        `where registrasi_id = ${registrasiId} and status_batal is null`,
-    );
+    const regDetail = await prismaDb1.registrasi_detail.findFirst({
+        where: {
+            registrasi_id: registrasiId,
+            status_batal: null,
+        },
+        select: {
+            registrasi_detail_id: true,
+        },
+    });
+    const registrasiDetailId = regDetail?.registrasi_detail_id;
     const batalRegistrasiDetail: any =
         await prismaDb1.registrasi_detail.updateMany({
             where: {
@@ -788,11 +791,16 @@ const checkDataRegistrasi = async (data: any) => {
 
 const checkInData = async (data: any) => {
     const registrasiId = parseInt(data.kodebooking, 10);
-    const registrasiDetailId = await selectFieldDb1(
-        "registrasi_detail",
-        "registrasi_detail_id",
-        `where registrasi_id = ${registrasiId} and status_batal is null`,
-    );
+    const regDetail = await prismaDb1.registrasi_detail.findFirst({
+        where: {
+            registrasi_id: registrasiId,
+            status_batal: null,
+        },
+        select: {
+            registrasi_detail_id: true,
+        },
+    });
+    const registrasiDetailId = regDetail?.registrasi_detail_id;
     const checkIn = await prismaDb1.registrasi_urut.updateMany({
         where: {
             registrasi_detail_id: registrasiDetailId,

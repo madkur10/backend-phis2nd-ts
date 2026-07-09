@@ -4,9 +4,13 @@ import { dateNow } from "./../../middlewares/time";
 
 const listReadyHitTaskBpjs = async (limit: number, task_id: number, backdate = false, tglAwal: string = "", tglAkhir: string = "") => {
     let filter, selectTaskTime, kondisiTask;
+    const queryParams: any[] = [];
+    let paramIndex = 1;
     let valueBackDate = "";
     if (backdate === true) {
-        valueBackDate = ` between '${tglAwal}' and '${tglAkhir}'`;
+        valueBackDate = ` between $${paramIndex++}::date and $${paramIndex++}::date`;
+        queryParams.push(tglAwal);
+        queryParams.push(tglAkhir);
     } else {
         valueBackDate = ` = now()::date`;
     }
@@ -181,9 +185,10 @@ const listReadyHitTaskBpjs = async (limit: number, task_id: number, backdate = f
         where 
             data_log.task_time is not null
         order by random()
-        limit ${limit};`;
+        limit $${paramIndex++};`;
+    queryParams.push(limit);
 
-    const readyHitTaskNow = await prismaDb3.$queryRawUnsafe(queryTask);
+    const readyHitTaskNow = await prismaDb3.$queryRawUnsafe(queryTask, ...queryParams);
 
     return readyHitTaskNow;
 };
@@ -747,7 +752,7 @@ const getKodeBagian = async (registrasi_id: number) => {
 };
 
 const listReadyHitTaskBpjsNol = async (limit: number, tglAwal: string, tglAkhir: string) => {
-    const queryTask = `select
+    return await prismaDb1.$queryRaw<any[]>`select
         pasien.nama_pasien,
         registrasi.registrasi_id,
         registrasi.tgl_masuk,
@@ -778,11 +783,9 @@ const listReadyHitTaskBpjsNol = async (limit: number, tglAwal: string, tglAkhir:
         and task_id = '0'
     where
         registrasi.status_batal is null
-        and tgl_masuk::date between '${tglAwal}' and '${tglAkhir}'
+        and tgl_masuk::date between ${tglAwal}::date and ${tglAkhir}::date
         and task_bpjs_log_id is null
     limit ${limit};`;
-    
-    return await prismaDb1.$queryRawUnsafe(queryTask);
 };
 
 export {
