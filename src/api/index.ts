@@ -1,5 +1,4 @@
 import { Router } from "express";
-import bodyParser from "body-parser";
 import { authenticateToken, loginAuthentication } from "../middlewares/auth";
 import { router as loginController } from "./login/login.controller";
 import { router as authController } from "./auth/auth.controller";
@@ -12,9 +11,6 @@ import { router as SatuSehatController } from "./satu-sehat/";
 import { router as itSupportController } from "./it-support/itsupport.controller";
 
 const router = Router();
-
-router.use(bodyParser.json());
-router.use(bodyParser.urlencoded({ extended: false }));
 
 router.use("/login", loginAuthentication, loginController);
 router.use("/auth", authController);

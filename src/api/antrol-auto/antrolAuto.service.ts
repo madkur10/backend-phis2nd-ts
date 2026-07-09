@@ -13,6 +13,108 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
+/**
+ * Checks the response message for a task time sequence error and retries the request with a corrected timestamp.
+ * BPJS Error formats:
+ * 1. "Waktu TaskId=1 (2026-07-06 16:05:51 WIB) lebih besar dari pada TaskId=2 (2026-07-06 12:48:47 WIB)"
+ * 2. "Waktu (2026-07-03 07:21:30 WIB) tidak boleh kurang atau sama dengan waktu sebelumnya"
+ */
+const checkAndRetryUpdateTask = async (
+    registrasi_id: string | number,
+    task_id: number,
+    initialResponseMessage: string,
+    headersData: any,
+    method: string
+): Promise<{ success: boolean; newResponse?: string; newUrl?: string; newDate?: Date }> => {
+    let currentResponse = initialResponseMessage;
+    let currentUrl = "";
+    let currentDate: Date | undefined;
+    let success = false;
+
+    // Retry loop up to 36 attempts to find a valid past time slot (up to +720 minutes / 12 hours)
+    for (let attempt = 1; attempt <= 36; attempt++) {
+        const matchGreater = currentResponse.match(/Waktu TaskId=[0-9]+\s*\(([^)]+)\)\s*lebih besar/i);
+        const matchLess = currentResponse.match(/Waktu\s*\(([^)]+)\)\s*tidak boleh kurang/i);
+
+        if (!matchGreater && !matchLess) {
+            if (success) {
+                console.log(`[BPJS UPDATE TASK] [SUCCESS] registrasi_id: ${registrasi_id}, task_id: ${task_id} berhasil di-update dengan response: "${currentResponse}"`);
+            }
+            break;
+        }
+
+        if (attempt === 1) {
+            console.log(`\n[BPJS UPDATE TASK] [CONFLICT DETECTED] registrasi_id: ${registrasi_id}, task_id: ${task_id}`);
+            console.log(`[BPJS UPDATE TASK] Error Awal: "${currentResponse}"`);
+        }
+
+        try {
+            let prevTimeStr = "";
+            let minutesToAdd = 1;
+
+            if (matchGreater) {
+                prevTimeStr = matchGreater[1].replace(/\s*(WIB|WITA|WIT)/i, "").trim();
+                minutesToAdd = 1; // set to 1 minute past the previous task's time
+            } else if (matchLess) {
+                prevTimeStr = matchLess[1].replace(/\s*(WIB|WITA|WIT)/i, "").trim();
+                minutesToAdd = 20; // add 20 minutes to the attempted time
+            }
+
+            const tzStr = matchGreater ? matchGreater[1] : (matchLess ? matchLess[1] : "");
+            let offsetHours = 7;
+            if (/WITA/i.test(tzStr)) {
+                offsetHours = 8;
+            } else if (/WIT/i.test(tzStr)) {
+                offsetHours = 9;
+            }
+
+            const isoStr = prevTimeStr.replace(" ", "T") + "Z";
+            const dateUTC = new Date(isoStr);
+            dateUTC.setHours(dateUTC.getHours() - offsetHours);
+            const baseTimestamp = Math.floor(dateUTC.getTime() / 1000);
+            
+            const nextTimestamp = baseTimestamp + (minutesToAdd * 60);
+            const retryUrl = `${process.env.urlPHIS}API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/UPDATE/${registrasi_id}-${task_id}-1-${nextTimestamp}`;
+            
+            const targetDateStr = new Date((nextTimestamp * 1000) + (offsetHours * 3600 * 1000)).toISOString().replace('T', ' ').slice(0, 19) + ` ${tzStr.match(/WIB|WITA|WIT/i)?.[0] || 'WIB'}`;
+            console.log(`[BPJS UPDATE TASK] [ATTEMPT #${attempt}] Mencoba waktu baru: ${targetDateStr} (+${minutesToAdd}m)`);
+            
+            const responseRetry: any = await requestAxios(
+                headersData,
+                retryUrl,
+                method,
+                null
+            );
+            
+            currentResponse = responseRetry?.data?.metadata?.message || "";
+            currentUrl = retryUrl;
+            currentDate = new Date((nextTimestamp * 1000) + (offsetHours * 3600 * 1000));
+            success = true;
+
+            console.log(`[BPJS UPDATE TASK] [RESPONSE #${attempt}]: "${currentResponse}"`);
+        } catch (error: any) {
+            console.error(`[BPJS UPDATE TASK] [ERROR] di attempt #${attempt}:`, error);
+            break;
+        }
+
+        if (attempt === 36 && (currentResponse.match(/Waktu TaskId=[0-9]+\s*\(([^)]+)\)\s*lebih besar/i) || currentResponse.match(/Waktu\s*\(([^)]+)\)\s*tidak boleh kurang/i))) {
+            console.log(`[BPJS UPDATE TASK] [FAILED] Gagal meng-update setelah 36 attempts (+720 menit / 12 jam).`);
+        }
+    }
+
+    if (success) {
+        return {
+            success: true,
+            newResponse: currentResponse,
+            newUrl: currentUrl,
+            newDate: currentDate
+        };
+    }
+
+    return { success: false };
+};
+
+
 const updateTask = async (limit: number, task_id: number, backdate = false, tglAwal: string = "", tglAkhir: string = "") => {
     let task_bpjs: any = "";
     if (backdate === true) {
@@ -28,8 +130,7 @@ const updateTask = async (limit: number, task_id: number, backdate = false, tglA
     let regNew: any = [];
     for (let i = 0; i < task_bpjs.length; i++) {
         const registrasi_id = task_bpjs[i].registrasi_id;
-        let task_time = task_bpjs[i].task_time;
-        let task_time_current = task_bpjs[i].task_time;
+        const task_time = new Date(task_bpjs[i].task_time.getTime());
         task_time.setHours(task_time.getHours() - 7);
         if (task_id == 2) {
             task_time.setMinutes(task_time.getMinutes() + 1);
@@ -37,9 +138,9 @@ const updateTask = async (limit: number, task_id: number, backdate = false, tglA
             task_time.setMinutes(task_time.getMinutes() + 2);
         }
 
-        task_time = Date.parse(task_time) / 1000;
+        const task_time_sec = Math.floor(task_time.getTime() / 1000);
 
-        const url = `${process.env.urlPHIS}API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/UPDATE/${registrasi_id}-${task_id}-1-${task_time}`;
+        const url = `${process.env.urlPHIS}API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/UPDATE/${registrasi_id}-${task_id}-1-${task_time_sec}`;
         const method = "GET";
         const headersData = {};
 
@@ -50,18 +151,36 @@ const updateTask = async (limit: number, task_id: number, backdate = false, tglA
             null
         );
 
+        let finalResponse = responseBooking?.data?.metadata?.message || "";
+        let finalUrl = url;
+        let finalTaskTime = new Date(task_time.getTime() + (7 * 3600 * 1000));
+
+        const retryResult = await checkAndRetryUpdateTask(
+            registrasi_id,
+            task_id,
+            finalResponse,
+            headersData,
+            method
+        );
+
+        if (retryResult.success) {
+            finalResponse = retryResult.newResponse || "";
+            finalUrl = retryResult.newUrl || "";
+            if (retryResult.newDate) {
+                finalTaskTime = retryResult.newDate;
+            }
+        }
+
         const dataObj = {
             id: registrasi_id,
-            task_time: new Date(
-                task_time_current.setHours(task_time_current.getHours() + 7)
-            ),
-            url: url,
-            response: responseBooking.data.metadata.message,
+            task_time: finalTaskTime,
+            url: finalUrl,
+            response: finalResponse,
             description: "Update Task Rajal",
         };
         dataEndResponse.push(dataObj);
 
-        if (responseBooking.data.metadata.message == 'TaskId=4 tidak valid / TaskId sebelumnya belum terkirim') {
+        if (finalResponse == 'TaskId=4 tidak valid / TaskId sebelumnya belum terkirim') {
             regNew.push(registrasi_id);
         }
     }
@@ -80,8 +199,7 @@ const updateTaskPoliSesuai = async (limit: number, task_id: number) => {
     let regNew: any = [];
     for (let i = 0; i < task_bpjs.length; i++) {
         const registrasi_id = task_bpjs[i].registrasi_id;
-        let task_time = task_bpjs[i].task_time;
-        let task_time_current = task_bpjs[i].task_time;
+        const task_time = new Date(task_bpjs[i].task_time.getTime());
         task_time.setHours(task_time.getHours() - 7);
         if (task_id == 2) {
             task_time.setMinutes(task_time.getMinutes() + 1);
@@ -89,9 +207,9 @@ const updateTaskPoliSesuai = async (limit: number, task_id: number) => {
             task_time.setMinutes(task_time.getMinutes() + 2);
         }
 
-        task_time = Date.parse(task_time) / 1000;
+        const task_time_sec = Math.floor(task_time.getTime() / 1000);
 
-        const url = `${process.env.urlPHIS}API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/UPDATE/${registrasi_id}-${task_id}-1-${task_time}`;
+        const url = `${process.env.urlPHIS}API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/UPDATE/${registrasi_id}-${task_id}-1-${task_time_sec}`;
         const method = "GET";
         const headersData = {};
 
@@ -102,18 +220,36 @@ const updateTaskPoliSesuai = async (limit: number, task_id: number) => {
             null
         );
 
+        let finalResponse = responseBooking?.data?.metadata?.message || "";
+        let finalUrl = url;
+        let finalTaskTime = new Date(task_time.getTime() + (7 * 3600 * 1000));
+
+        const retryResult = await checkAndRetryUpdateTask(
+            registrasi_id,
+            task_id,
+            finalResponse,
+            headersData,
+            method
+        );
+
+        if (retryResult.success) {
+            finalResponse = retryResult.newResponse || "";
+            finalUrl = retryResult.newUrl || "";
+            if (retryResult.newDate) {
+                finalTaskTime = retryResult.newDate;
+            }
+        }
+
         const dataObj = {
             id: registrasi_id,
-            task_time: new Date(
-                task_time_current.setHours(task_time_current.getHours() + 7)
-            ),
-            url: url,
-            response: responseBooking.data.metadata.message,
+            task_time: finalTaskTime,
+            url: finalUrl,
+            response: finalResponse,
             description: "Update Task Rajal",
         };
         dataEndResponse.push(dataObj);
 
-        if (responseBooking.data.metadata.message == 'TaskId=4 tidak valid / TaskId sebelumnya belum terkirim') {
+        if (finalResponse == 'TaskId=4 tidak valid / TaskId sebelumnya belum terkirim') {
             regNew.push(registrasi_id);
         }
     }
@@ -132,8 +268,7 @@ const updateTaskRujukBedaPoli = async (limit: number, task_id: number) => {
     let regNew: any = [];
     for (let i = 0; i < task_bpjs.length; i++) {
         const registrasi_id = task_bpjs[i].registrasi_id;
-        let task_time = task_bpjs[i].task_time;
-        let task_time_current = task_bpjs[i].task_time;
+        const task_time = new Date(task_bpjs[i].task_time.getTime());
         task_time.setHours(task_time.getHours() - 7);
         if (task_id == 2) {
             task_time.setMinutes(task_time.getMinutes() + 1);
@@ -141,9 +276,9 @@ const updateTaskRujukBedaPoli = async (limit: number, task_id: number) => {
             task_time.setMinutes(task_time.getMinutes() + 2);
         }
 
-        task_time = Date.parse(task_time) / 1000;
+        const task_time_sec = Math.floor(task_time.getTime() / 1000);
 
-        const url = `${process.env.urlPHIS}API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/UPDATE/${registrasi_id}-${task_id}-1-${task_time}`;
+        const url = `${process.env.urlPHIS}API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/UPDATE/${registrasi_id}-${task_id}-1-${task_time_sec}`;
         const method = "GET";
         const headersData = {};
 
@@ -154,18 +289,36 @@ const updateTaskRujukBedaPoli = async (limit: number, task_id: number) => {
             null
         );
 
+        let finalResponse = responseBooking?.data?.metadata?.message || "";
+        let finalUrl = url;
+        let finalTaskTime = new Date(task_time.getTime() + (7 * 3600 * 1000));
+
+        const retryResult = await checkAndRetryUpdateTask(
+            registrasi_id,
+            task_id,
+            finalResponse,
+            headersData,
+            method
+        );
+
+        if (retryResult.success) {
+            finalResponse = retryResult.newResponse || "";
+            finalUrl = retryResult.newUrl || "";
+            if (retryResult.newDate) {
+                finalTaskTime = retryResult.newDate;
+            }
+        }
+
         const dataObj = {
             id: registrasi_id,
-            task_time: new Date(
-                task_time_current.setHours(task_time_current.getHours() + 7)
-            ),
-            url: url,
-            response: responseBooking.data.metadata.message,
+            task_time: finalTaskTime,
+            url: finalUrl,
+            response: finalResponse,
             description: "Update Task Rajal",
         };
         dataEndResponse.push(dataObj);
 
-        if (responseBooking.data.metadata.message == 'TaskId=4 tidak valid / TaskId sebelumnya belum terkirim') {
+        if (finalResponse == 'TaskId=4 tidak valid / TaskId sebelumnya belum terkirim') {
             regNew.push(registrasi_id);
         }
     }
@@ -185,7 +338,7 @@ const updateTaskFisio = async (limit: number, task_id: number) => {
     for (let i = 0; i < task_bpjs.length; i++) {
         task_time = getDateWithOffset(task_id, task_bpjs[i].tgl_masuk);
         // task_time.setHours(task_time.getHours() - 7);
-        task_timex = Date.parse(task_time) / 1000;
+        task_timex = Math.floor(new Date(task_time).getTime() / 1000);
         const registrasi_id = task_bpjs[i].registrasi_id;
         const url = `${process.env.urlPHIS}API/BPJS/SIMRS-VCLAIM/V2/ANTROL/ANTREAN/UPDATE/${registrasi_id}-${task_id}-1-${task_timex}`;
         const method = "GET";
@@ -198,11 +351,38 @@ const updateTaskFisio = async (limit: number, task_id: number) => {
             null
         );
 
+        let finalResponse = responseBooking?.data?.metadata?.message || "";
+        let finalUrl = url;
+        let finalTaskTime: any = task_time;
+
+        const retryResult = await checkAndRetryUpdateTask(
+            registrasi_id,
+            task_id,
+            finalResponse,
+            headersData,
+            method
+        );
+
+        if (retryResult.success) {
+            finalResponse = retryResult.newResponse || "";
+            finalUrl = retryResult.newUrl || "";
+            if (retryResult.newDate) {
+                // format retryResult.newDate back to 'YYYY-MM-DD HH:mm:ss.SSS'
+                const year = retryResult.newDate.getFullYear();
+                const month = String(retryResult.newDate.getMonth() + 1).padStart(2, "0");
+                const day = String(retryResult.newDate.getDate()).padStart(2, "0");
+                const hours = String(retryResult.newDate.getHours()).padStart(2, "0");
+                const minutes = String(retryResult.newDate.getMinutes()).padStart(2, "0");
+                const seconds = String(retryResult.newDate.getSeconds()).padStart(2, "0");
+                finalTaskTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.000`;
+            }
+        }
+
         const dataObj = {
             id: registrasi_id,
-            task_time: task_time,
-            url: url,
-            response: responseBooking.data.metadata.message,
+            task_time: finalTaskTime,
+            url: finalUrl,
+            response: finalResponse,
             description: "Update Task Fisio",
         };
         dataEndResponse.push(dataObj);

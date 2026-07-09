@@ -1,19 +1,29 @@
 import { prismaDb1, prismaDb2, prismaDb3, prismaDb4 } from "./index";
 
+const validateIdentifier = (name: string) => {
+    if (name && !/^[a-zA-Z0-9_]+$/.test(name)) {
+        throw new Error(`Security Exception: Invalid SQL identifier '${name}'`);
+    }
+};
+
 const generateMaxDb1 = async (
     sequenceName: string,
     field?: string | any,
     conditions?: string | any
 ) => {
+    validateIdentifier(sequenceName);
+    if (field) validateIdentifier(field);
+
     const queryCheckSequence = `
         select
             sequence_name
         from
             information_schema.sequences
         where
-            sequence_name = '${sequenceName}';`;
+            sequence_name = $1;`;
     const sequenceCheck: any = await prismaDb1.$queryRawUnsafe(
-        queryCheckSequence
+        queryCheckSequence,
+        sequenceName
     );
 
     let generateMax;
@@ -23,10 +33,10 @@ const generateMaxDb1 = async (
                 COALESCE(MAX(${field})+1, 1) as maxid
             FROM
                 ${sequenceName}
-                ${conditions};`;
-        const sequenceCheck: any = await prismaDb1.$queryRawUnsafe(rawQuery);
+                ${conditions || ""};`;
+        const sequenceCheckResult: any = await prismaDb1.$queryRawUnsafe(rawQuery);
 
-        generateMax = parseInt(sequenceCheck[0].maxid.toString());
+        generateMax = parseInt(sequenceCheckResult[0].maxid.toString());
     } else {
         const rawQuery: any = await prismaDb1.$queryRaw`SELECT 
             nextval(${sequenceName}) + 1 as nextval`;
@@ -42,6 +52,9 @@ const selectFieldDb1 = async (
     field: string | any,
     conditions: string | any
 ) => {
+    validateIdentifier(tableName);
+    validateIdentifier(field);
+
     const rawQuery = `SELECT
                         ${field}
                     FROM
@@ -50,7 +63,7 @@ const selectFieldDb1 = async (
                     Limit 1`;
     const selectDataField: any = await prismaDb1.$queryRawUnsafe(rawQuery);
 
-    return selectDataField[0][field];
+    return selectDataField[0]?.[field];
 };
 
 const generateMaxDb2 = async (
@@ -58,15 +71,19 @@ const generateMaxDb2 = async (
     field?: string | any,
     conditions?: string | any
 ) => {
+    validateIdentifier(sequenceName);
+    if (field) validateIdentifier(field);
+
     const queryCheckSequence = `
         select
             sequence_name
         from
             information_schema.sequences
         where
-            sequence_name = '${sequenceName}';`;
+            sequence_name = $1;`;
     const sequenceCheck: any = await prismaDb2.$queryRawUnsafe(
-        queryCheckSequence
+        queryCheckSequence,
+        sequenceName
     );
 
     let generateMax;
@@ -76,10 +93,10 @@ const generateMaxDb2 = async (
                 COALESCE(MAX(${field})+1, 1) as maxid
             FROM
                 ${sequenceName}
-                ${conditions};`;
-        const sequenceCheck: any = await prismaDb2.$queryRawUnsafe(rawQuery);
+                ${conditions || ""};`;
+        const sequenceCheckResult: any = await prismaDb2.$queryRawUnsafe(rawQuery);
 
-        generateMax = parseInt(sequenceCheck[0].maxid.toString());
+        generateMax = parseInt(sequenceCheckResult[0].maxid.toString());
     } else {
         const rawQuery: any = await prismaDb2.$queryRaw`SELECT 
             nextval(${sequenceName}) + 1 as nextval`;
@@ -95,15 +112,19 @@ const generateMaxDb4 = async (
     field?: string | any,
     conditions?: string | any
 ) => {
+    validateIdentifier(sequenceName);
+    if (field) validateIdentifier(field);
+
     const queryCheckSequence = `
         select
             sequence_name
         from
             information_schema.sequences
         where
-            sequence_name = '${sequenceName}';`;
+            sequence_name = $1;`;
     const sequenceCheck: any = await prismaDb4.$queryRawUnsafe(
-        queryCheckSequence
+        queryCheckSequence,
+        sequenceName
     );
 
     let generateMax;
@@ -113,10 +134,10 @@ const generateMaxDb4 = async (
                 COALESCE(MAX(${field})+1, 1) as maxid
             FROM
                 ${sequenceName}
-                ${conditions};`;
-        const sequenceCheck: any = await prismaDb4.$queryRawUnsafe(rawQuery);
+                ${conditions || ""};`;
+        const sequenceCheckResult: any = await prismaDb4.$queryRawUnsafe(rawQuery);
 
-        generateMax = parseInt(sequenceCheck[0].maxid.toString());
+        generateMax = parseInt(sequenceCheckResult[0].maxid.toString());
     } else {
         const rawQuery: any = await prismaDb4.$queryRaw`SELECT 
             nextval(${sequenceName}) as nextval`;
@@ -132,6 +153,9 @@ const selectFieldDb2 = async (
     field: string | any,
     conditions: string | any
 ) => {
+    validateIdentifier(tableName);
+    validateIdentifier(field);
+
     const rawQuery = `SELECT
                         ${field}
                     FROM
@@ -140,7 +164,7 @@ const selectFieldDb2 = async (
                     Limit 1`;
     const selectDataField: any = await prismaDb2.$queryRawUnsafe(rawQuery);
 
-    return selectDataField[0][field];
+    return selectDataField[0]?.[field];
 };
 
 const timeHandler = async (timex: any) => {

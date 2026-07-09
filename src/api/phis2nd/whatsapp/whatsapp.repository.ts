@@ -35,30 +35,30 @@ const checkConfirmWhatsapp = async (registrasi_urut_id: number) => {
 };
 
 const checkDataKunjungan = async (data: string) => {
-    const checkData = `SELECT
-                            pasien.nama_pasien,
-                            pegawai.nama_pegawai,
-                            bagian.nama_bagian,
-                            registrasi.tgl_masuk::date
-                        FROM
-                            registrasi
-                        INNER JOIN registrasi_detail ON
-                            registrasi.registrasi_id = registrasi_detail.registrasi_id
-                            and registrasi_detail.status_batal is null
-                        INNER JOIN registrasi_urut ON
-                            registrasi_detail.registrasi_detail_id = registrasi_urut.registrasi_detail_id
-                            and registrasi_urut.status_batal is null
-                        INNER JOIN bagian ON
-                            registrasi_detail.bagian_id = bagian.bagian_id
-                        INNER JOIN pasien ON
-                            registrasi.pasien_id = pasien.pasien_id
-                        LEFT JOIN pegawai ON
-                            registrasi_urut.pegawai_id = pegawai.pegawai_id
-                        WHERE
-                            registrasi_urut.registrasi_urut_id = '${data}'
-                            AND registrasi.status_batal is null
-                            `;
-    const dataKunjungan: any = await prismaDb1.$queryRawUnsafe(checkData);
+    const dataKunjungan: any = await prismaDb1.$queryRaw`
+        SELECT
+            pasien.nama_pasien,
+            pegawai.nama_pegawai,
+            bagian.nama_bagian,
+            registrasi.tgl_masuk::date
+        FROM
+            registrasi
+        INNER JOIN registrasi_detail ON
+            registrasi.registrasi_id = registrasi_detail.registrasi_id
+            and registrasi_detail.status_batal is null
+        INNER JOIN registrasi_urut ON
+            registrasi_detail.registrasi_detail_id = registrasi_urut.registrasi_detail_id
+            and registrasi_urut.status_batal is null
+        INNER JOIN bagian ON
+            registrasi_detail.bagian_id = bagian.bagian_id
+        INNER JOIN pasien ON
+            registrasi.pasien_id = pasien.pasien_id
+        LEFT JOIN pegawai ON
+            registrasi_urut.pegawai_id = pegawai.pegawai_id
+        WHERE
+            registrasi_urut.registrasi_urut_id = ${data}
+            AND registrasi.status_batal is null
+    `;
 
     return dataKunjungan[0];
 };

@@ -12,13 +12,12 @@ import { corsOptions } from "./config/corsOption";
 import cookieParser from "cookie-parser";
 import { sanitizeAndRejectXSS } from "./utils/sanitize";
 
-import {
-    panggilAntrianService,
-    updatePanggilanService,
-} from "./api/phis2nd/antrian/antrian.service";
 import { insertedTicketService } from "./api/it-support/itsupport.service";
 import { chatFarmasiKasir } from "./api/chat/chat.service";
 import { chatSupportService } from "./api/it-support/itsupport.service";
+import { disconnectAll } from "./db";
+import { router as farmasiMerialRouter } from "./api/phis2nd/antrian/antrian.controller";
+import { initAntrolCron } from "./api/antrol-auto/antrolAuto.cron";
 
 dotenv.config();
 const app = express();
@@ -30,6 +29,8 @@ const io = new Server(server, {
     cors: { origin: "*" },
     maxHttpBufferSize: 10e6, // biar bisa diakses client lain
 });
+
+app.set("io", io);
 
 // 🔹 middlewares
 app.use(credentials);
@@ -56,101 +57,99 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // 🔹 routes
 app.use("/", welcomeRouter);
 app.use("/api", apiRouter);
-app.post(
-    "/farmasi-merial/panggil-antrian",
-    async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const dataPanggilan = await panggilAntrianService(req.body);
-
-            let antrian_panggil;
-            if (dataPanggilan) {
-                antrian_panggil =
-                    dataPanggilan.initial +
-                    String(dataPanggilan.no_antrian).padStart(3, "0");
-                io.emit("panggil-antrian", {
-                    monitoring_antrian_resep_id:
-                        dataPanggilan.monitoring_antrian_resep_id,
-                    loket: dataPanggilan.loket,
-                    antrian_panggil: antrian_panggil,
-                });
-
-                const updatePanggilan = await updatePanggilanService(req.body);
-
-                res.json({
-                    metadata: { code: 200 },
-                    data: {
-                        monitoring_antrian_resep_id:
-                            dataPanggilan.monitoring_antrian_resep_id,
-                        loket: dataPanggilan.loket,
-                        antrian_panggil: antrian_panggil,
-                    },
-                });
-            }
-        } catch (err) {
-            console.error(err);
-            res.status(500).json({ metadata: { code: 500 }, message: "error" });
-        }
-    },
-);
+app.use("/farmasi-merial", farmasiMerialRouter);
 
 io.on("connection", async (socket) => {
     const BAGIAN_ID: string = socket.handshake.query.bagian as string;
-    console.log(`User dari bagian ${BAGIAN_ID} terhubung`);
+    // console.log(`User dari bagian ${BAGIAN_ID} terhubung`);
 
     socket.join(BAGIAN_ID);
 
     socket.on("chat message", async (data) => {
-        const chatData = await chatFarmasiKasir(data);
-        if (chatData?.code === 200) {
-            const rooms = [data.bagian_id_tertuju, data.bagian_id_pengirim];
-            data.chat_detail_id = chatData.chat_detail_id;
-            data.nama_pasien = chatData.nama_pasien;
-            data.no_mr = chatData.no_mr;
+        try {
+            const chatData = await chatFarmasiKasir(data);
+            if (chatData?.code === 200) {
+                const rooms = [data.bagian_id_tertuju, data.bagian_id_pengirim];
+                data.chat_detail_id = chatData.chat_detail_id;
+                data.nama_pasien = chatData.nama_pasien;
+                data.no_mr = chatData.no_mr;
 
-            io.to(rooms).emit("chat message", data);
-        } else {
+                io.to(rooms).emit("chat message", data);
+            } else {
+                io.to(data.bagian_id_pengirim).emit("chat message", {
+                    ...data,
+                    message: "Gagal mengirim pesan",
+                });
+            }
+        } catch (err) {
+            console.error("Error pada socket event 'chat message':", err);
             io.to(data.bagian_id_pengirim).emit("chat message", {
                 ...data,
-                message: "Gagal mengirim pesan",
+                message: "Gagal mengirim pesan karena terjadi kesalahan internal",
             });
         }
     });
 
     socket.on("chat message support", async (data) => {
-        const chatDataSupport = await chatSupportService(data);
-        if (chatDataSupport?.code === 200) {
-            const rooms = [data.bagian_id_tertuju, data.bagian_id_pengirim];
-            io.to(rooms).emit("chat message support", chatDataSupport.data);
-        } else {
+        try {
+            const chatDataSupport = await chatSupportService(data);
+            if (chatDataSupport?.code === 200) {
+                const rooms = [data.bagian_id_tertuju, data.bagian_id_pengirim];
+                io.to(rooms).emit("chat message support", chatDataSupport.data);
+            } else {
+                io.to(data.bagian_id_pengirim).emit("chat message support", {
+                    ...data,
+                    message: "Gagal mengirim pesan",
+                });
+            }
+        } catch (err) {
+            console.error("Error pada socket event 'chat message support':", err);
             io.to(data.bagian_id_pengirim).emit("chat message support", {
                 ...data,
-                message: "Gagal mengirim pesan",
+                message: "Gagal mengirim pesan karena terjadi kesalahan internal",
             });
         }
-    })
+    });
 
     socket.on("new_complaint_ticket", async (payload, callback) => {
-        const insertedTicket = await insertedTicketService(payload);
-        callback(insertedTicket);
-        io.to([payload.department_id, payload.bagian_id_support]).emit(
-            "new_complaint_ticket",
-            insertedTicket,
-        );
+        try {
+            const insertedTicket = await insertedTicketService(payload);
+            if (typeof callback === "function") {
+                callback(insertedTicket);
+            }
+            io.to([payload.department_id, payload.bagian_id_support]).emit(
+                "new_complaint_ticket",
+                insertedTicket,
+            );
+        } catch (err) {
+            console.error("Error pada socket event 'new_complaint_ticket':", err);
+            if (typeof callback === "function") {
+                callback({
+                    metadata: { code: 500, message: "Terjadi kesalahan internal server" }
+                });
+            }
+        }
     });
 
     socket.on("update_complaint_ticket", async (payload, callback) => {
-        callback({
-            metadata: { code: 200, message: "Success Update Ticket Status" },
-            data: payload,
-        });
-        io.to([payload.department_id, payload.bagian_id_support]).emit(
-            "ticket_updated",
-            payload,
-        );
+        try {
+            if (typeof callback === "function") {
+                callback({
+                    metadata: { code: 200, message: "Success Update Ticket Status" },
+                    data: payload,
+                });
+            }
+            io.to([payload.department_id, payload.bagian_id_support]).emit(
+                "ticket_updated",
+                payload,
+            );
+        } catch (err) {
+            console.error("Error pada socket event 'update_complaint_ticket':", err);
+        }
     });
 
     socket.on("disconnect", () => {
-        console.log(`User dari bagian ${BAGIAN_ID} terputus`);
+        // console.log(`User dari bagian ${BAGIAN_ID} terputus`);
     });
 });
 
@@ -162,4 +161,18 @@ app.use(errLogger);
 // 🔹 start server
 server.listen(PORT, () => {
     console.log(`✅ Server running on PORT ${PORT} at ${new Date()}`);
+    initAntrolCron();
+});
+
+const handleShutdown = async (signal: string) => {
+    console.log(`\n🚨 Received ${signal}. Starting graceful shutdown...`);
+    await disconnectAll();
+    process.exit(0);
+};
+
+process.on("SIGINT", () => handleShutdown("SIGINT"));
+process.on("SIGTERM", () => handleShutdown("SIGTERM"));
+process.on("SIGUSR2", async () => {
+    await disconnectAll();
+    process.kill(process.pid, "SIGUSR2");
 });
