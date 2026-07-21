@@ -206,6 +206,7 @@ const checkEmrTerdaftar = async (data: any) => {
 };
 
 const checkEmrValidasi = async (data: any) => {
+    let kodebooking = parseInt(data.kodebooking, 10);
     const checkEmrPasien = await prismaDb1.$queryRaw<any[]>`
         SELECT
             registrasi.registrasi_id,
@@ -227,7 +228,7 @@ const checkEmrValidasi = async (data: any) => {
             registrasi.registrasi_id = emr.registrasi_id
             and emr.status_batal is null
         where
-            registrasi.registrasi_id = ${data.kodebooking}
+            registrasi.registrasi_id = ${kodebooking}
             and registrasi.status_batal is null
         order by
             tgl_masuk::date asc
@@ -946,7 +947,7 @@ const getTindakanBedah = async (jenistindakan: any) => {
         WHERE
             detail_tindakan_bedah.detail_tindakan_bedah_id = ${jenistindakan}`;
 
-    return tindakanBedah[0].nama_tindakan_bedah;
+    return tindakanBedah[0]?.nama_tindakan_bedah || null;
 };
 
 const getJadwalOperasi = async (data: any) => {
