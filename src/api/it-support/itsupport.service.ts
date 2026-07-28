@@ -15,6 +15,7 @@ import {
     getUnreadCountRepo,
     getTicketChatRepo,
     updateChatReadRepo,
+    getEmployeesByRefBagianRepo,
 } from "./itsupport.repository";
 
 const getDashboardService = async (start_date?: string, end_date?: string) => {
@@ -112,9 +113,15 @@ const insertedTicketService = async (payload: any) => {
 };
 
 const updateTicketsService = async (payload: any) => {
-    const updateTicket: any = await updateTicketRepo(payload);
+    let updatePayload = { ...payload };
+    let logPayload = { ...payload };
+    if (payload.status === "confirm_user") {
+        updatePayload.status = "Resolved";
+        logPayload.status = "Confirm User";
+    }
+    const updateTicket: any = await updateTicketRepo(updatePayload);
     if (updateTicket) {
-        await insertedTicketLogRepo(payload);
+        await insertedTicketLogRepo(logPayload);
     }
     return updateTicket;
 };
@@ -184,6 +191,10 @@ const bufferBase64 = (base64String: string) => {
     return Buffer.from(base64Data, "base64");
 };
 
+const getEmployeesByRefBagianService = async (refBagianId: number) => {
+    return await getEmployeesByRefBagianRepo(refBagianId);
+};
+
 export {
     getDashboardService,
     getListTicketsService,
@@ -195,4 +206,5 @@ export {
     getTicketChatService,
     chatSupportService,
     updateChatReadService,
+    getEmployeesByRefBagianService,
 };

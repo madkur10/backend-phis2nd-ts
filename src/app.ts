@@ -148,6 +148,14 @@ io.on("connection", async (socket) => {
         }
     });
 
+    socket.on("emergency_code", (payload) => {
+        try {
+            io.emit("emergency_code", payload);
+        } catch (err) {
+            console.error("Error pada socket event 'emergency_code':", err);
+        }
+    });
+
     socket.on("disconnect", () => {
         // console.log(`User dari bagian ${BAGIAN_ID} terputus`);
     });
