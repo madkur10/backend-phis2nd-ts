@@ -71,12 +71,12 @@ const getListTicketsRepo = async (
         queryParams.push(ticket_id);
     }
 
-    let queryConditionDashboard = "";
-    if (list_dashboard || ticket_id) {
-        queryConditionDashboard = "";
-    } else {
-        queryConditionDashboard = ` and t.status not in ('Closed', 'Resolved')`;
-    }
+    // let queryConditionDashboard = "";
+    // if (list_dashboard || ticket_id) {
+    //     queryConditionDashboard = "";
+    // } else {
+    //     queryConditionDashboard = ` and t.status not in ('Closed', 'Resolved')`;
+    // }
 
     let queryConditionDate = "";
     if (start_date && end_date) {
@@ -99,6 +99,7 @@ const getListTicketsRepo = async (
             t.created_at,
             t.id,
             t.description,
+            t.resolved_by,
             EXTRACT(HOUR FROM (NOW() - t.created_at))::INT as duration,
             json_agg(
                 json_build_object(
@@ -106,20 +107,19 @@ const getListTicketsRepo = async (
                 'note', tl.note,
                 'status', tl.status_changed_to,
                 'created_at', tl.created_at
-                )
+                ) ORDER BY tl.created_at ASC
             ) ticket_log
         from
             tickets t
         join categories c on
             t.category_id = c.id
         left join ticket_logs tl on
-	        t.id = tl.ticket_id
+ 	        t.id = tl.ticket_id
         where
             1 = 1
             ${queryConditionDate}
             ${queryConditionBagian}
             ${queryConditionTicket}
-            ${queryConditionDashboard}
         group by
             t.ticket_number,
             t.department_id ,
@@ -130,10 +130,12 @@ const getListTicketsRepo = async (
             t.status,
             t.created_at,
             t.id,
-            t.description
+            t.description,
+            t.resolved_by
         order by
             t.created_at asc
     `;
+    console.log(getListTickets);
 
     const getListTicketsResult: any =
         await prismaDb4.$queryRawUnsafe(getListTickets, ...queryParams);
@@ -141,9 +143,11 @@ const getListTicketsRepo = async (
         for (let i = 0; i < getListTicketsResult.length; i++) {
             const userId = parseInt(getListTicketsResult[i].user_id, 10);
             const deptId = parseInt(getListTicketsResult[i].department_id, 10);
+            const resolvedById = parseInt(getListTicketsResult[i].resolved_by, 10);
 
             getListTicketsResult[i].nama_pegawai = isNaN(userId) ? null : await getNamaPegawaiRepo(userId);
             getListTicketsResult[i].nama_bagian = isNaN(deptId) ? null : await getNamaBagianRepo(deptId);
+            getListTicketsResult[i].nama_petugas_resolved = isNaN(resolvedById) ? null : await getNamaPegawaiRepo(resolvedById);
 
             if (getListTicketsResult[i].ticket_log[0] && getListTicketsResult[i].ticket_log[0].user_id_petugas) {
                 for (
@@ -231,7 +235,7 @@ const insertedTicketChatRepo = async (payload: any, awal?: boolean) => {
 };
 
 const updateTicketRepo = async (payload: any) => {
-    const { ticket_id, status, priority } = payload;
+    const { ticket_id, status, priority, resolved_by } = payload;
 
     const data: any = {
         status: status,
@@ -239,6 +243,10 @@ const updateTicketRepo = async (payload: any) => {
 
     if (priority !== undefined && priority !== null && priority !== "") {
         data.priority = priority;
+    }
+
+    if (resolved_by !== undefined && resolved_by !== null && resolved_by !== "") {
+        data.resolved_by = parseInt(resolved_by, 10);
     }
 
     const updateTicket = await prismaDb4.tickets.update({
@@ -415,4 +423,61 @@ export {
     getUnreadCountRepo,
     getTicketChatRepo,
     updateChatReadRepo,
+    getEmployeesByRefBagianRepo,
+};
+
+const getEmployeesByRefBagianRepo = async (refBagianId: number) => {
+    console.log("refBagianId", refBagianId);
+    const departments = await prismaDb1.bagian.findMany({
+        where: {
+            referensi_bagian: refBagianId,
+            OR: [
+                { status_batal: null },
+                { status_batal: 0 }
+            ]
+        },
+        select: {
+            bagian_id: true
+        }
+    });
+
+    console.log(departments);
+
+    const bagianIds = departments.map(d => d.bagian_id);
+    if (bagianIds.length === 0) return [];
+
+    const employees = await prismaDb1.pegawai.findMany({
+        where: {
+            bagian_id: { in: bagianIds },
+            OR: [
+                { status_batal: null },
+                { status_batal: 0 }
+            ]
+        },
+        select: {
+            pegawai_id: true
+        }
+    });
+
+    const pegawaiIds = employees.map(e => e.pegawai_id);
+    if (pegawaiIds.length === 0) return [];
+
+    const users = await prismaDb1.users.findMany({
+        where: {
+            pegawai_id: { in: pegawaiIds },
+            OR: [
+                { status_batal: null },
+                { status_batal: 0 }
+            ]
+        },
+        select: {
+            user_id: true,
+            nama_pegawai: true
+        },
+        orderBy: {
+            nama_pegawai: "asc"
+        }
+    });
+
+    return users;
 };

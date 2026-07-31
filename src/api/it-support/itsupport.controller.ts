@@ -17,6 +17,7 @@ import {
     getUnreadCountService,
     getTicketChatService,
     updateChatReadService,
+    getEmployeesByRefBagianService,
 } from "./itsupport.service";
 export const router = Router();
 
@@ -97,6 +98,26 @@ router.get(
                 status: 200,
                 message: "Success Get IT Support List Category",
                 data: getListCategory,
+            });
+        } catch (error: any) {
+            next(error.message.replace(/\n/g, " "));
+        }
+    },
+);
+
+router.get(
+    "/employees-by-referensi-bagian",
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const refBagianId = parseInt(req.query.ref_bagian_id as string, 10);
+            if (isNaN(refBagianId)) {
+                return res.status(400).json({ status: 400, message: "Invalid ref_bagian_id" });
+            }
+            const employees = await getEmployeesByRefBagianService(refBagianId);
+            res.status(200).json({
+                status: 200,
+                message: "Success Get Employees",
+                data: employees,
             });
         } catch (error: any) {
             next(error.message.replace(/\n/g, " "));
