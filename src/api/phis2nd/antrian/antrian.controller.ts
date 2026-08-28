@@ -52,3 +52,19 @@ router.post(
         }
     },
 );
+
+router.post(
+    "/trigger-refresh-dokter",
+    async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const io = req.app.get("io");
+            if (io) {
+                io.emit("refresh-antrian-dokter", req.body);
+            }
+            res.json({ metadata: { code: 200 }, message: "Trigger Success" });
+        } catch (err) {
+            console.error("Error triggering websocket:", err);
+            res.status(500).json({ metadata: { code: 500 }, message: "error" });
+        }
+    }
+);
