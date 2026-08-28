@@ -61,9 +61,15 @@ app.use("/farmasi-merial", farmasiMerialRouter);
 
 io.on("connection", async (socket) => {
     const BAGIAN_ID: string = socket.handshake.query.bagian as string;
+    const PROFESI_ID: string = socket.handshake.query.profesi as string;
     // console.log(`User dari bagian ${BAGIAN_ID} terhubung`);
 
-    socket.join(BAGIAN_ID);
+    if (BAGIAN_ID) {
+        socket.join(BAGIAN_ID);
+    }
+    if (PROFESI_ID) {
+        socket.join(`profesi_${PROFESI_ID}`);
+    }
 
     socket.on("chat message", async (data) => {
         try {
@@ -150,9 +156,47 @@ io.on("connection", async (socket) => {
 
     socket.on("emergency_code", (payload) => {
         try {
-            io.emit("emergency_code", payload);
+            const isTargeted = payload.target_profesi && payload.target_profesi !== 'all';
+            if (isTargeted) {
+                // target_profesi is a comma-separated list of profession IDs, e.g. "3,6"
+                const targets = payload.target_profesi.split(',');
+                const rooms = targets.map((p: string) => `profesi_${p.trim()}`);
+                
+                // Selalu sertakan TV Display Monitor di koridor
+                rooms.push("profesi_TV_MONITOR");
+
+                // Kirimkan ke semua target profesi
+                io.to(rooms).emit("emergency_code", payload);
+            } else {
+                // Kirimkan ke seluruh client jika 'all'
+                io.emit("emergency_code", payload);
+            }
         } catch (err) {
             console.error("Error pada socket event 'emergency_code':", err);
+        }
+    });
+
+    socket.on("emergency_ack", (payload) => {
+        try {
+            io.emit("emergency_ack", payload);
+        } catch (err) {
+            console.error("Error pada socket event 'emergency_ack':", err);
+        }
+    });
+
+    socket.on("emergency_resolve", (payload) => {
+        try {
+            io.emit("emergency_resolve", payload);
+        } catch (err) {
+            console.error("Error pada socket event 'emergency_resolve':", err);
+        }
+    });
+
+    socket.on("emergency_video_update", (payload) => {
+        try {
+            io.emit("emergency_video_update", payload);
+        } catch (err) {
+            console.error("Error pada socket event 'emergency_video_update':", err);
         }
     });
 
