@@ -71,6 +71,10 @@ io.on("connection", async (socket) => {
         socket.join(`profesi_${PROFESI_ID}`);
     }
 
+    socket.on("refresh-antrian-dokter", (data) => {
+        io.emit("refresh-antrian-dokter", data);
+    });
+
     socket.on("chat message", async (data) => {
         try {
             const chatData = await chatFarmasiKasir(data);
